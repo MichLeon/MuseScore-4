@@ -1469,7 +1469,6 @@ If PaletteSymbol in =pppppp,=ppppp,=pppp,=ppp,=pp,=p,=mp,=mf,=f,=ff,=fff,=ffff,=
 Send ^{F9}						; Palette Search (Ctrl+F9) (*change*?)
 Sleep, Sleep_200					; after sending the identifier the macro continues at (☼)
 
-
 ;  ♣========================== ACCIDENTALS 'STANDARD' and 'GOULD' =================================
 ; NB this is a selection containing frequently used accidentals
 ; shortcuts in this section
@@ -1497,20 +1496,30 @@ If (PaletteSymbol = "3fb") || (PaletteSymbol = "dnb")		; ↓♭ - Gould Three-qu
     Send, three-
 If (PaletteSymbol = "1sn") || (PaletteSymbol = "upn")		; ↑♮ - Gould Quarter-tone sharp
     Send, -tone s
-If (PaletteSymbol = "5sx") || (PaletteSymbol = "xup")		; ×↑ - Gould Five-quarter-tones sharp
+If (PaletteSymbol = "5sx") || (PaletteSymbol = "xup") {		; ×↑ - Gould Five-quarter-tones sharp
+    Send, es sh
+    Pal_DownStroke := 1
+}
+If (PaletteSymbol = "5fbb") || (PaletteSymbol = "dnbb")		; ↓♭♭ - Gould Five-quarter-tones flat
     Send, fiv
-If (PaletteSymbol = "5fbb") || (PaletteSymbol = "dnbb")	; ↓♭♭ - Gould Five-quarter-tones flat
-    Send, fiv
-If (PaletteSymbol = "1fn") || (PaletteSymbol = "ndn")		; ♮↓ - Gould Quarter-tone flat
+If (PaletteSymbol = "1fn") || (PaletteSymbol = "ndn") {		; ♮↓ - Gould Quarter-tone flat
     Send, -tone f
+    Pal_DownStroke := 1
+}
 If (PaletteSymbol = "3s#") || (PaletteSymbol = "sup")		; ♯↑ - Gould Three-quarter-tones sharp
-    Send, three-
-If (PaletteSymbol = "1s#") || (PaletteSymbol = "dns")		; ↓♯ - Gould Quarter-tone sharp
+    Send, es sh
+If (PaletteSymbol = "1s#") || (PaletteSymbol = "dns") {		; ↓♯ - Gould Quarter-tone sharp
     Send, -tone s
-If (PaletteSymbol = "3sx") || (PaletteSymbol = "dnx")		; ↓× - Gould Three-quarter-tones sharp
+    Pal_DownStroke := 1
+}
+If (PaletteSymbol = "3sx") || (PaletteSymbol = "dnx") {		; ↓× - Gould Three-quarter-tones sharp
+    Send, es sh
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "3fbb") || (PaletteSymbol = "bupb") {	; ♭↑♭ - Gould Three-quarter-tones flat
     Send, three-
-If (PaletteSymbol = "3fbb") || (PaletteSymbol = "bupb")		; ♭↑♭ - Gould Three-quarter-tones flat
-    Send, three-
+    Pal_DownStroke := 3
+}
 If (PaletteSymbol = "arf") || (PaletteSymbol = "ardn")		; Arrow down - flat (lower by one quarter-tone)
     Send, arrow d
 If (PaletteSymbol = "ars") || (PaletteSymbol = "arup")		; Arrow up - sharp (raise by one quarter-tone)
