@@ -1,0 +1,172 @@
+﻿#NoEnv					; Recommended for performance and compatibility with future AutoHotkey releases.
+#Warn					; Enable warnings to assist with detecting common errors.
+SendMode Input				; Recommended for new scripts due to its superior speed and reliability.
+; SetWorkingDir, C:\Users\smede\Documents\AutoHotkey\MuseScore 4
+SetWorkingDir %A_ScriptDir%		; Ensures a consistent starting directory. Lijkt niet t werken
+#SingleInstance force			; Replaces script (Reloads).
+#Persistent				; to make it run indefinitely
+
+; if you are working in MuseScore and you have dragging enabled with CapsLock + E >
+; don't forget to disable dragging with CapsLock + D or a mouse click
+; when dragging is enabled you can't minimize the MU4 window with WIN + Down
+
+CoordMode, Mouse, Window
+CoordMode, ToolTip, Window
+
+; ======================== CAPSLOCK TOGGLE and COPY COORDINATES =========================
+
+SetTimer, ShowCoordinates, 0				; "0" updates position instantly
+Return
+ShowCoordinates:					; label of SetTimer
+if !GetKeyState("CapsLock", "T")			; whether capslock is on or off - toggle state
+    ToolTip, , , , 1					; if off, don't show tooltip (1) at all
+else
+{							; if on
+    CoordMode, ToolTip, Window				
+    MouseGetPos, XX, YY					; get mouse x and y position, store as %xx% and %yy%
+    ToolTip, %XX% %YY%, , , 1				; (1) display tooltip near mouse cursor
+}
+Return
+
+~/ & c::Clipboard = %xx% %yy%				; store coordinates in clipboard
+
+; ================================= PIXELMOUSING ========================================
+; NB: selected language is English - US keyboard
+; speed: 100 is slowest, 0 is instantly
+; R = movement relative to mouseposition
+
+; as a precaution the next keypresses are disabled
+~CapsLock & Numpad0::
+~CapsLock & Numpad1::
+~CapsLock & Numpad3::
+~CapsLock & Numpad5::
+~CapsLock & Numpad7::
+~CapsLock & Numpad9::
+Return
+
+~CapsLock & Numpad8::
+MouseMove, 0, -100, 0, R	; move up 100 pixels
+Return
+
+~CapsLock & Numpad2::
+MouseMove, 0, 100, 0, R		; move down 100 pixels
+Return
+
+~CapsLock & Numpad4::
+MouseMove, -100, 0, 0, R	; move left 100 pixels
+Return
+
+~CapsLock & Numpad6::
+MouseMove, 100, 0, 0, R		; move right 100 pixels
+Return
+
+~CapsLock & PgUp::
+~/ & u::
+MouseMove, 0, -25, 0, R		; move up 25 pixels
+Return
+
+~CapsLock & PgDn::
+~/ & d::
+MouseMove, 0, 25, 0, R		; move down 25 pixels
+Return
+
+~CapsLock & home::
+~/ & l::
+MouseMove, -25, 0, 0, R		; move left 25 pixels
+Return
+
+~CapsLock & end::
+~/ & r::
+MouseMove, 25, 0, 0, R		; move right 25 pixels
+Return
+
+~CapsLock & left::
+~/ & Left::
+MouseMove, -1, 0, 100, R	; move left 1 px
+Return
+
+~CapsLock & right::
+~/ & Right::
+MouseMove, 1, 0, 100, R		; move right 1 px
+Return
+
+~CapsLock & up::
+~/ & Up::
+MouseMove, 0, -1, 100, R	; move up 1 px
+Return
+
+~CapsLock & down::
+~/ & Down::
+MouseMove, 0, 1, 100, R		; move down 1 px
+Return
+
+~/ & ,::
+Send {Click}			; left click
+Return
+
+~/ & .::
+Send {Click, right}		; right click
+Return
+
+~CapsLock & e::			; drag enable
+~/ & n::
+SendEvent {Click, down}		; click and hold down
+Return
+
+~CapsLock & d::			; drag disable
+~/ & m::
+SendEvent {Click, up}		; release the mouse button
+Return
+
+; ====================================== HELP ===========================================
+
+~/ & h::			; open help info
+MsgBox, 4096, PixelMousing,
+(
+Coordinates are relative to the active window
+
+Show/hide coordinates		CapsLock
+Copy coordinates			/ + C
+
+Move the mouse:     1 px slow
+
+Up		/ + Up		CapsLock + Up
+Down		/ + Down	CapsLock + Down
+Left		/ + Left		CapsLock + Left
+Right		/ + Right		CapsLock + Right
+
+Move the mouse:     25 px slow
+
+Up		/ + U		CapsLock + PageUp
+Down		/ + D		CapsLock + PageDown
+Left		/ + L		CapsLock + Home
+Right		/ + R		CapsLock + End
+
+Move the mouse:     100 px fast
+
+Up				CapsLock + NumPad 8
+Down				CapsLock + NumPad 2
+Left				CapsLock + NumPad 4
+Right				CapsLock + NumPad 6
+
+
+Left Click		/ + ,
+Right Click	/ + .
+Drag enable #	/ + N		CapsLock + E
+Drag disable #	/ + M		CapsLock + D
+
+# While using Windows Snipping Tool:
+  Start/Stop  image creation
+
+Exit PixelMousing			] + /
+)
+Return
+; ====================================== EXIT ===========================================
+
+~] & /::
+MsgBox, 4132, PixelMousing, Are you sure you want to exit?
+IfMsgBox, Yes
+ExitApp
+Return
+
+~^!r:: reload

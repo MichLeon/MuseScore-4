@@ -1,0 +1,3841 @@
+﻿; AutoHotkey version 1.1.36.02	download on https://github.com/AutoHotkey/AutoHotkey/releases
+; latest version v1.1.36.02   NOT v2.00 or v2.0.2 -  Click 'Assets'
+; download AutoHotkey_1.1.36.02_setup.exe - 3.19 MB - Dec 7, 2022
+
+; AutoHotkey comes with a script called Window Spy, which can be used to confirm the title, class and process name 
+; of a window. the class and process name are often used when identifying a window by title alone is not feasible.
+; you can find Window Spy in the script's tray menu or the AutoHotkey Dash.
+; with a double click on an AHK file in the script's tray menu you can inspect command execution
+; to get pixel precision use the tool PixelMousing which is part of this kit
+
+; in the NotePad View menu: switch Word wrap OFF
+; search with (*change*?) to customize the position of some tooltips and offsets
+
+#NoEnv  				; recommended for performance and compatibility with future AutoHotkey releases.
+#Warn  					; enable warnings to assist with detecting common errors.
+SendMode Input  			; recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%		; ensures a consistent starting directory
+#SingleInstance force			; replaces script (reloads).
+#Persistent				; to make it run indefinitely
+#IfWinActive ahk_exe C:\Program Files\MuseScore 4\bin\MuseScore4.exe	; (*) enables Hotkeys when MuseScore4 Window is Active
+
+; (*) Check the path C:\Program Files\MuseScore 4\bin\MuseScore4.exe. 
+; if different: replace it with your location of MuseScore4.exe
+; NB: AutoHotkey does not read the lines after semicolon and space. they don't influence speed of execution.
+
+; Liberate (or redefine) MU4 shortcut keys to enable them as Prefix keys in AHK.
+
+; the macros presuppose a 'Defined State'. the MU4 window must be in a fixed screen layout of your choice.
+; it is essential that all panels are always docked and the statusbar must always be visible.
+; in normal operation the F789 SideBar contains all 3 Radio Buttons: Instruments, Properties and Palettes.
+; in this document the F789 SideBar is docked left, but you can choose a different MU4 screen layout.
+
+; the macros may not allow unpredictable edits. for instance in your chosen layout the ToolBar Note Input TBNI
+; must always be absent but you have it switched on a moment ago. now the F789 sidebar titles are NOT in their
+; defined state, they are too low. for safety reasons macro execution must now be prevented.
+; a 'wrong' layout increases the chance for a misbehaving mouse in the Canvas Search Area (see below) as well.
+; to test the layout we need some checks each having its own subroutine. these concern the position of the
+; ToolBar Note Input TBNI, the StatusBar and (related) the screen size (full or maximized)
+
+; the Defined_State_Check:
+; to check the TBNI position we need an image (.png), created by Windows Snipping Tool,named Def_State_4_Dots.png.
+; this small image - 4 dots! - is present in the 4 possible positions of the 6 Dots shwon by the TBNI,
+; horizontal high or low and vertical left or right
+; the AHK ImageSearch command will scan all surfaces where this image may appear to detect its presence
+; how to determine the search area of images? TIP(§)
+; start PixelMousing, doubleclick the png, measure width and height of the image, if in doubt increase the
+; found numbers a tiny bit
+; Press Z + U to open the utilities. in the help file find the number of the image you want to test
+; and input the number, for the TBNI it is 1
+; make the screen Max or Full (according to your chosen layout). now the screen is searched, the image is found
+; and the mouse moves to its Upper Left Corner ULC. make a note of the X- and Y-coordinates. decrease the found X by 1px.
+; you have found X1. add the earlier found width to X1 and increase by 2. You have found X2.
+; idem for Y. decrease the found Y by 1px to determine Y1. add the height to Y1 and increase by 2.
+; you now have found Y2. replace the numbers (below) in this auto-execute section of the script by your own numbers
+; you'll have to determine the coordinates of 4 small search areas, for each possible position of a docked TBNI,
+; even if you don't need the toolbar!
+; in the five lines below you see 4 lines 'outcommented' - switched off - by a semicolon and a space
+; this reflects my personal favorite: i prefer maximum real estate and don't need the ToolBar Note Input TBNI.
+; if you prefer another layout put a semicolon and a space before this line and enable your favorite
+; by deleting the semicolon and space in front of it (and save this ahk file)
+
+TBNI_Pos := "no"			; no ToolBar Note Input
+; TBNI_Pos := "hh"			; ToolBar Note Input is horizontal high
+; TBNI_Pos := "hl"			; ToolBar Note Input is horizontal low
+; TBNI_Pos := "vl"			; ToolBar Note Input is vertical left
+; TBNI_Pos := "vr"			; ToolBar Note Input is vertical right
+
+4_Dots_HH_X1 := 6			; HH - TBNI in horizontal high position
+4_Dots_HH_Y1 := 72
+4_Dots_HH_X2 := 29
+4_Dots_HH_Y2 := 100
+
+4_Dots_HL_X1 := 4_Dots_HH_X1		; HL - TBNI in horizontal low position
+4_Dots_HL_Y1 := 1370
+4_Dots_HL_X2 := 4_Dots_HH_X2
+4_Dots_HL_Y2 := 1411
+
+4_Dots_VL_X1 := 33			; VL - TBNI in vertical left position
+4_Dots_VL_Y1 := 69
+4_Dots_VL_X2 := 67
+4_Dots_VL_Y2 := 98
+
+4_Dots_VR_X1 := 2517			; VR - TBNI in vertical right position
+4_Dots_VR_Y1 := 4_Dots_VL_Y1
+4_Dots_VR_X2 := A_ScreenWidth
+4_Dots_VR_Y2 := 4_Dots_VL_Y2
+
+; the Full_Max_Check checks your screen size, an important part of your Defined State.
+; the check uses the image Def_State_Zoom_Tools.png
+; if the image is not found within the StatusBar macro execution is delayed and the subroutine
+; sets immediately the correct screen size corresponding with the height of the StatusBar within
+; your chosen layout, maximized or full. For the surface area of the StatusBar see below.
+
+; RELATED - the HEIGHT of the MU4 WINDOW WHEN MAXIMIZED
+; to find the MU4_Max_Window_Height: run PixelMousing. put the cursor in the upper left corner of the screen.
+; press WIN + Up to maximize the MU4 window. Check the coordinates.
+; if they are NOT 0,0 press WIN + Up again. the coordinates must become 0,0.
+; now put the mouse cursor at the bottom of the screen. pixel mouse upward until the cursor changes shape.
+; go 1 px down, the cursor appears as an arrow again. write down the number of MU4_Max_Window_Height
+; see also below: intermediate screen size change
+
+MU4_Max_Window_Height := 1392
+
+; a simple protection against unwanted edits:
+; when you press F9 and the Palettes sidepanel disappears the hotkey Z+A will be disabled
+; a MessageBox will appear signalling this situation
+
+; NAVIGATION - START
+; for the 'navigation principles' see https://musescore.org/en/handbook/4/accessibility#keyboard-access
+; to start navigating within the F789 SideBar panels AutoHotkey needs a fixed point of departure
+; it first has to find the radio button 'Home'
+; the image must show its selected state with the black line between 'Home' and 'Score'
+; it is created by first making a screenshot of the upper left area of MU4, pasted in a text editor.
+; these are the coordinates of the surface in which the image Def_State_Nav_to_Home.png will be found on the test screen
+
+Nav_Home_X1 := 0			; area occupied by the radio button 'Home' in its selected state
+Nav_Home_Y1 := 32			; X1 and Y1 determine the upper left corner ULC of the image
+Nav_Home_X2 := 70			; X2 and Y2 the lower right corner LRC
+Nav_Home_Y2 := 68			; make the search area a tiny bit bigger than the image, see TIP(§) above
+
+; NAVIGATION - FINDING and ACTIVATING THE SIDEPANELS
+; we have three titles, so we need 6 images, each title in its selected and unselected state
+; the subroutine F7_F8_F9_Tab_Title_Check: must activate the needed sidepanel even if currently absent
+; we must define the search area for the images of the titles 'Palettes' ,'Properties', 'Instruments'
+; the coordinates below are valid on the testscreen (resolution 2560 X 1440) for that Defined State
+; in which there is no TBNI (or maybe the TBNI is Horizontal Low or Vertical Right)
+; it will be clear that a vertical left TBNI shifts the search area of the Titles to the right.
+; determine the coordinates for the layout of your choice
+
+F7_F8_F9_Tab_Title_X1 := 0		; search area for the titles 'Palettes' ,'Properties', 'Instruments'
+F7_F8_F9_Tab_Title_Y1 := 68	
+F7_F8_F9_Tab_Title_X2 := 300		; this X is on the separator line of SideBar <> Canvas
+F7_F8_F9_Tab_Title_Y2 := 104		; see TIP§ above
+
+; (‡) we don't want the mouse to click on the Upper Left Corner ULC of a title image. too risky, we need an offset
+; check with the tool PixelMousing if the offset given below works also for your screen
+; as mentioned you can find the ULC with the utility Z+U which of course also checks if the image is recognized at all
+
+X_Offset_F7_F8_F9_Tab_Title := 20	; 20 pixels more to the right and 
+Y_Offset_F7_F8_F9_Tab_Title := 15	; 15 down relative to ULC of the selected image
+
+; the Defined State is also important if we immediately want to attach the chosen symbol again
+; although many symbols can be attached in one go using a range or list selection.
+; imagine we have added a tremolo - via Z+A and immediately want to attach it somewhere else.
+; the fastest way is by pressing WIN + / by which the macro simply clicks the already selected palette cell.
+; it finds the cell by its color (more about colors below), but we have to tell it where to search.
+; dynamics need the biggest search area. press Control+F9 and type 'dy'.
+; determine the coordinates for your favorite layout
+
+Side_Bar_X1 := 0			; extreme left
+Side_Bar_Y1 := 180			; just under the Palette category title ▼ Dynamics
+Side_Bar_X2 := 300			; separation Sidebar and Canvas
+Side_Bar_Y2 := 520			; just under the cell mf < of ▼ Lines
+
+; determining the Canvas Surface Area
+CSA_X1 := 304				; Canvas Surface Area - the real estate
+CSA_Y1 := 96				; CSA_X1, CSA_Y1 is upper left corner, just to the right of the Sidebar
+CSA_X2 := 2559				; CSA_X2, CSA_Y2 define the lower right corner, the screenwidth
+CSA_Y2 := 1410				; just above the Statusbar
+
+; the InputBox 'Apply Symbols from Palette'appears after pressing Z + A
+; use the AHK utility Window Spy to determine size and position of this InputBox.
+; in this example the InputBox is positioned in the SideBar (at the left), just above the StatusBar.
+; the appearance of the InputBox forces the screen temporarily to its maximized state.
+
+W_IB := 302				; Width of InputBox in left side bar
+H_IB := 103				; Height of InputBox idem
+IB_X := 0				; X-pos top left corner InputBox in left side bar
+IB_Y := 1282				; Y-pos top left corner InputBox idem
+
+; THE STATUSBAR - in many situations we use images of its messages, enhancing macro functionality
+; search area - surface in which an image - e.g. StatusBar_Range_Selection.png - will be found.
+; the given settings are for Full Screen.
+
+SB_X1 := 0				; the search area is the narrow ribbon at the bottom
+SB_Y1 := 1411				; across the full width of of the screen.
+; SB_Y1 := 1364 			; in Maximized Screen
+SB_X2 := A_ScreenWidth			; width and height are known and represented by the AHK inbuilt variables
+SB_Y2 := A_ScreenHeight			; A_ScreenWidth and A_ScreenHeight - here Full Screen is enabled
+; SB_Y2 := 1392				; in Maximized Screen
+
+; all StatusBar images but one are searched within this surface area
+; the EXCEPTION is the image Nothing_Selected.png, it consists of an empty area extreme left within the StatusBar
+; the StatusBar will be searched from the left (X1=0). but X2 is determined by its width + 1 px
+
+Width_Nothing_Selected := 60		; doubleclick Nothing_Selected.png and measure the width using PixelMousing
+					; make 'Width_Nothing_Selected' just a bit bigger than the found width
+
+; AHK can search for a specific color. this functionality increases the efficiency of any workflow
+; the command ColorSearch also takes care of the return to the Canvas after an edit in a side panel
+
+ColorV1 := 0x0065bf			; Preferences > Advanced: engraving/colors
+ColorV2 := 0x007f00			; engraving/colors/voice1, idem 2 3 and 4
+ColorV3 := 0xc53f00			; 0x is the AHK equivalent of # in the window Select Color
+ColorV4 := 0xc31989			; the numbers are the default values. change them when you use custom colors 
+Color_LBC := 0xa0a0a4			; Layout Break Color - see below
+Color_Selected_PalCell := 0xb7d7f4	; idem of a selected cell e.g. the dynamic pppppp
+Color_Beam_Type_Auto := 0xb7d7f4	; color field when beaming is auto  	
+
+; the fields having the last 2 colors change color when the mouse hovers over them.
+; to prevent that change we first open another window e.g. Preferences
+; now we can find the color number using the utility Z+/ (which is part of this kit) or Window Spy
+; for the palette cell color press Control + F9, type 6xp (pppppp) in the Palettes search field and press Tab
+; after pressing Tab press right and down. pppppp is selected.
+; put the mouse on a colored spot within the pppppp palette cell. press Z+/
+; repeat the procedure to find Color_Beam_Type_Auto in the Properties side panel
+; Layout Break Color: in Continuous view set a high zoom factor and put the mouse on a (greyish) time signature. press Z+/
+
+; some macros have extra functionality giving immediate access to the 'Properties' panel.
+; a special case is 'feathered beams'. but creating them via the Palette makes a return to the Canvas impossible.
+; that's why they are created in 'Properties'. however to make this full proof AHK needs an extra check.
+; we need AHK to search for the Color_Beam_Type_Auto in this area:
+
+Beam_Type_Auto_X1 := 18			; if the beaming of the feathered beam is not 'Auto' the field 'Reset beam type'
+Beam_Type_Auto_Y1 := 403		; is active. This adds an extra field. So when we need to reset a feathered beam
+Beam_Type_Auto_X2 := 59			; we have in this case to add an extra 'Down stroke' to reach the field 'None'.
+Beam_Type_Auto_Y2 := 443		; AHK checks if the field 'Auto' is colored to determine what to do.
+
+; INTERMEDIATE SCREEN SIZE CHANGE - FULL OR MAX
+; the hotkey CapsLock + A toggles full/max screen. advantage: in *both* screen sizes you now can press WIN + Down
+; to minimize MU4. this hotkey does NOT use the MU4 shortcut for Full Screen.
+; in this way we avoid some particular problems of early versions of MU4. moreover the Canvas is a tiny bit bigger.
+
+; SETTING YOUR PREFERRED SCREEN SIZE
+; if you prefer Maximized screen remove the semicolon plus space in the second line and put them before the first
+Screen := "full"			; defined state - Full Screen
+; Screen := "max"			; defined state - Maximized Screen
+
+; some initial values
+Toggle_Screen_Full_Max := 1		; just a declaration - leave it as it is
+Toggle_F9 := 0				; idem
+Counter_F9 := 0				; idem
+Show_Palettes := 1			; idem
+Range_Selection := ""			; idem
+Side_Bar_Tab_Old := ""			; idem
+Side_Bar_Tab := ""			; idem
+
+PaletteSymbolOld := ""			; idem
+Return_to_Canvas := ""			; idem
+Repeat_Glyph_X := ""			; idem
+Repeat_Glyph_Y := ""			; idem
+Offset_Glyph := 15			; palette cell selected, we need an offset as mentioned above (‡)
+					; 15 pixels more right and idem lower relative to the upper left corner
+					; determine the offset for your system
+
+; ♣===================================== SLEEP TIMES ==============================================
+; after a command the sleep time (in milliseconds) gives MU4 and/or Win OS time to respond
+; e.g a mousemove and click on the test screen needs a sleep of 200 ms, statusbar images usually 150 ms
+; commands working globally - e.g.  inserting a repeat barline - usually need more time
+; reaction times for showing windows or submenus vary greatly in MU4
+; in the lines below you can optimize the sleep times for your system in one go
+; e.g change all sleep times set on 100 ms to 90 ms. ->  Sleep_100 := 90
+
+Sleep_25 := 25
+Sleep_30 := 30
+Sleep_50 := 50
+Sleep_80 := 80
+Sleep_100 := 100
+Sleep_150 := 150
+Sleep_200 := 200
+Sleep_250 := 250
+Sleep_300 := 300
+Sleep_400 := 400
+Sleep_500 := 500
+
+; ====================================== MATCHLIST UTILITIES ======================================
+; allowed input in Z+U , utilities hotkey
+
+MatchListUtilities = ?,Help = Questionmark,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+
+; ======================================= MATCHLIST PALETTES ======================================
+; change this only if you know what you're doing
+; allowed input in Z+A palettes hotkey. new shortcuts always have to be inserted in this list
+; of course duplicates are not allowed 
+
+; MatchListPalettes: line 1+2+3+4 dynamics, 5+6+7 articulations, 8+9+10 clefs, 11 ornaments, 12 barlines,
+; 13 rbl > reset barline span to default, r > repeat command 
+; 14 breaths & pauses, 15+16 accidentals, 17 key signatures, 18+19 repeats & jumps, 20 grace notes
+; 21+22 arpeggioss and glissandi, 23 pitch lines, 24 keyboard, 25 other lines, 26+27 text, 28 time signatures,
+; 29 tremolos, 30+31+32+33+34+35 tempo, 36 noteheads, 37 layout, 38 beam props, 39 brackets, 40 fingering,
+; 41 fretboard diagrams, 42 guitar, 43 harp, 44+45 info screens
+
+MatchListPalettes = c,cinv,d,dinv,pppppp,ppppp,pppp,ppp,pp,p,mp,mf,f,ff,fff,ffff,fffff,ffffff
+,fp,pf,sf,sfz,sff,sffz,sfp,sfpp,rfz,rf,fz,m*,r*,s*,z*,n*,mf<
+,=pppppp,=ppppp,=pppp,=ppp,=pp,=p,=mp,=mf,=f,=ff,=fff,=ffff,=fffff,=ffffff
+,=fp,=pf,=sf,=sfz,=sff,=sffz,=sfp,=sfpp,=rfz,=rf,=fz,=m*,=r*,=s*,=z*,=n*
+,a,.,..,t,t.,.t,l.,.l,m,a.,.a,lv,m.,.m,mt,p.,tm,..s,..w,w..,str,ta,at
+,unstr,sa,sa.,sat,sat.,fi,fo,vs,sls,swls,vlf,vls,o,+,h,ub,db,sp,b,tb
+,>,>.,.>,:,_,-.,._,^,^.,.^,^_,_^,../,/..,..','..,_>,>_,<>,<.>,<_>,<_.>,<._>,'
+,clt,clt8va,clt15ma,clt8vb,clt15vb,cldt8vb,clto8vb,clfvc,cls,clms,cla,clten,clbar
+,clb,clb8va,clb15ma,clb8vb,clb15mb,clbarf,clsb,clp,clp2,cltab,cltab4
+,clc19,cls18,cla18,clt18,clf18,cls20,cla20,clt20,clf19,cltabs,cltabs4
+,-t,-turn,+t,+turn,turn,tr,im,trmb,prm,upr,mor,mup,upm,pdn,dnm,pup,lpr,sl,slide,shtr,+t/,trl,upl,dpl,ppl
+,|,||,|:,:|,:||:,1:||:2,dash,----,fbl,|||,bl.,....,bt1,bt2,bs1,bs2,rfbl,hbl,hdbl
+,rbl,r
+,fm,sfm,lfm,lfmh,sfmh,vlfm,vsfm,bmc,bmt,bms,salz,bmv,c),c/,c||,c//,cal
+,!,@,#,##,!!,@!,@#,1fb,1fn,1sn,1s#,3fb,3fbb,3sx,3s#,5fbb,5sx,,upb,dnb
+,upn,ndn,sup,dns,xup,dnx,bupb,dnbb,ardn,arf,arup,ars,[],()
+,1#,2#,3#,4#,5#,6#,7#,7b,6b,5b,4b,3b,2b,1b,0#0b,xsig
+,rlm,r2m,r4m,seg,segv,coda,codav,fine,tct,tcs,dc,dcaf,dcac,dcadc,dacoda
+,da2coda,ds,dss,dsac,dsaf,dssac,dssadc,dssaf,1v,2v,2vo,3v,vibsaw,tremsaw
+,ac,acs,ap,aps,g4,g16,g32,g8a,g16a,g32a
+,arp,aru,ard,arru,arrd,arb,arbr,gls,glw,fal,fall,doi,doit,plo,plop
+,sco,scoop,sod,slod,sou,slou,sia,slia,sib,slib
+,8va,8vb,15ma,15mb,22ma,22mb,amb
+,pss,ps*,psr,psc,pcc,pcr
+,l,nal
+,syt,stt,sytl,sttl,ext,rm,lg,arc,dt,dis,od,har,jt,nm,mar,cl,sult,sulp,s/a,t/b,t/l/b/b,ci,mn,trem,mu,vib,piz
+,2/4,3/4,4/4,5/4,6/4,3/8,4/8,5/8,6/8,7/8,9/8,12/8,c4/4,2/2,c2/2,3/2,4/2,b2/2,c9/8
+,8,q,16,sq,32,dsq,64,hdsq,br,buzz,-8-,-q-,-16-,-sq-,-32-,-dsq-,-64-,-hdsq-
+,m2,m2.,m4,m4.,m8,m8.,gra,grav,grave,lar,larg,largo,len,lent,lento,ada,adag,adagi,adagio
+,and,anda,andan,andante,mod,mode,moder,moderato,alto,a>,allegre,allegretto
+,alro,a<,allegro,viv,viva,vivace,pre,pres,prest,presto,issimo,prestissimo
+,mm4=4.,mmc=c.,mm4.=4,mmc.=c,mm2=4,mmm=c,mm4=2,mmc=m,mm8=8,mmq=q,mm4=4,mmc=c,mm8.=4,mmq.=c
+,accel,allar,ritar,swing,strai,calan,lenta,moren,preci,smorz,soste,strin
+,minim,minim.,crotchet,crotchet.,quaver,quaver.
+,*n,*x,*+,*xc,*xx,*tu,*td,*/,*\,*d,*do,*c,*cl,*la,*ab,*//,*ld,sol,la,fa,mi,do,re,ti,*hx,*hxh
+,sb,pb,xb,ssd,ssu,ssf,stc,ivf,ihf,itf,i1mbs,kmoss
+,=ab,=nb,=bl,=sb,=jb,=mb,=bi8,=2b,=bi6,=3b,=fbd,=fbs,=fba,=fbf,=rfb
+,[[,[{,[s],[l
+,fsa,fsb,p0,p1,p2,p3,p4,p5,-a,-c,-i,-m,-p,0,1,2,3,4,5,s0,s1,s2,s3,s4,s5,s6,th,tp,lt,l1,l2,l3
+,qa,qam,qa7,qb,qbm,qb7,qc,qcm,qc7,qd,qdm,qd7,qe,qem,qe7,qf,qfm,qf7,qg,qgm,qg7
+,tl,bl,pm,lr,gv,gvw,vsaw,tsaw
+,hped,htxt
+,Help = Questionmark,?,?ac,?ag,?ar,?be,?bl,?bp,?br,?cl,?dy,?fd,?fi,?gn,?gt,?ha,?kb,?ks,?li,?lo,?nh
+,?or,?pi,?rj,?tx,?tr,?ts,?tm,??
+
+CoordMode, ToolTip, Screen
+ToolTip, Apply Symbols from Palette  P + H, A_ScreenWidth/2, 0, 1	; tooltip (1) at half Screenwidth and Y=0  (*change*?) 
+
+; ♣================================== AT SESSION START ============================================
+
+Gosub, Get_MU4_Window_Data
+If (Screen = "full")
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth, A_ScreenHeight
+If (Screen = "max")
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth, MU4_Max_Window_Height
+Sleep, Sleep_300
+Gosub, Defined_State_Check
+Return
+
+; ♣============================== END OF AUTO-EXECUTE SECTION =====================================
+; ♣======================================= HELP INFO ==============================================
+
+~p & h::
+MsgBox, 4096, Palette Help  -  P + H,
+(
+Apply symbols from palette		Z + A
+Recreate current symbol		Win + /
+Reset palette search field		CapsLock + P
+Escape from navigation		CapsLock + X
+
+Toggle toolbar note input		CapsLock + 1
+Toggle full/max screen		CapsLock + A
+Preferences - shortcuts		CapsLock + S
+
+Click selected element		Alt + Z
+From element to voice 1		Shift + Alt + Z
+
+Navigation
+To 'Home'			[ + Home
+Fast access Instruments		[ + I
+Fast access Properties		[ + O
+Fast access Palettes		[ + P
+
+Get color mouse position		Z + /
+Other utilities			Z + U
+
+Relaunch apply symbols #		[ + S
+Exit apply symbols			] + S
+# In Master MU4
+
+Selection
+Range - all similar			Control + RButton
+Range - same subtype		CapsLock + RButton
+Range - same voice		Alt + Shift + RButton
+Staff - all similar			Shift + RButton
+Staff - same subtype		Control + Shift + RButton
+)
+Return
+
+; ♣=============================== GENERAL SUPPORTING HOTKEYS =====================================
+
+~] & s::			; exit Apply_Palette_Symbols_MU4.ahk
+MsgBox, 4132, Exit Apply Palette Symbols    ]  +  S, Are you sure you want to exit?
+IfMsgBox, Yes
+    ExitApp
+Return
+
+; in auto-exec section - Toggle_Screen_Full_Max := 1
+#MaxThreadsPerHotkey, 2					; this line and its companion below belong to the hotkey!
+~CapsLock & a::						; full/max screen toggle (adjacent keys)
+Toggle_Screen_Full_Max := !Toggle_Screen_Full_Max
+Gosub, Get_MU4_Window_Data				; subroutine corrects for incorrect origin, X and Y of ULC must both be 0
+If (MU4_Height = A_ScreenHeight)
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth, MU4_Max_Window_Height
+If !(MU4_Height = A_ScreenHeight)
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth, A_ScreenHeight
+Return
+#MaxThreadsPerHotkey, 1
+
+~CapsLock & 1::			; toggle toolbar note input
+Send !v	
+Sleep, Sleep_200
+Send t
+Sleep, Sleep_100
+Send {down}
+Send {Enter}
+Return
+
+~CapsLock & p::			; empty palette search field and minimize palette list
+Send ^{F9}
+Sleep, Sleep_200
+Send {del}
+Sleep, Sleep_50
+Send {esc}
+Sleep, Sleep_50
+Return
+
+~CapsLock & s::			; preferences > shortcuts > search field
+Send !e
+Sleep, Sleep_200
+Send p
+Sleep, Sleep_100
+Send {Enter}
+Winwait, Preferences
+Send {tab 3}
+Send {up 3}
+Send {tab }
+Return
+
+~CapsLock & x::			; if focus on canvas is lost - escape from navigation
+Gosub, Nav_to_Home
+Send +{f6 2}			; to score title tab
+Sleep, Sleep_50
+Send {esc}			; focus in Canvas, (range) selection remains intact
+Sleep, Sleep_100
+If (Range_Selection = 1) {	; to get only one element selected for the VoiceSearch
+    Send {right}
+    Sleep, Sleep_50
+}
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Voice1.png
+If (ErrorLevel = 1) {
+    Send ^!+{right}
+    Sleep, Sleep_150
+    ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Barline.png
+    If (ErrorLevel = 0) {
+        Send ^!+{left}
+        Sleep, Sleep_150
+    }
+}
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Sleep, Sleep_200
+Return
+
+~!z::					; click selected element on canvas
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Return
+
+~+!z::					; from any element to note/rest voice 1
+Loop, 7
+{
+    ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Voice1.png
+    If (ErrorLevel = 0)
+        Break
+    If (ErrorLevel = 1) {
+        Send ^!+{right}			; to next voice 1 element (skip articulations, text, dynamics etc.)
+        Sleep, Sleep_150		; time for statusbar image
+        Continue
+    }
+}
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Return
+
+; ♣=========================================== UTILITY ============================================
+
+z & /::			; get color mouseposition
+CoordMode, Mouse, Window
+CoordMode, Pixel, Window
+MouseGetPos, X, Y
+PixelGetColor, PixColor, %X%, %Y% , RGB
+MsgBox, 4160, Color of mousepositionpixel , --- The color is %PixColor% ---`n`n0x is the equivalent of #`nin the window Select Color.
+Return
+
+; ♣==================================== DEFINED STATE OF F9 =======================================
+
+; in auto-exec Toggle_F9 := 0 Counter_F9 := 0  and Show_Palettes := 1
+; at session start 'Palettes' is visible
+
+#MaxThreadsPerHotkey, 2				; this line and its companion below belong to the hotkey
+F9::						; this command has no tilde ~ so the immediate MU4 command is intercepted
+Counter_F9 := ++Counter_F9
+Toggle_F9 := !Toggle_F9				; you need this hotkey to hide/show the Palettes side panel
+If !(Toggle_F9 = 0) && (Counter_F9 = 1) {	; manually activating this panel via the View menu is counterproductive!
+    MsgBox, 4144, Defined State Attention!,
+(
+You pressed F9 to hide the Palettes side panel.
+The hotkey Z + A is disabled.
+) , 2.5
+    Send {f9}
+    Show_Palettes := 0
+}
+If (Toggle_F9 = 0) && (Counter_F9 = 2) {
+    MsgBox, 4144, Defined State Attention!,
+(
+You pressed F9 to show the Palettes side panel.
+The hotkey Z + A is enabled.
+) , 2.5
+    Send {f9}
+    Show_Palettes := 1
+    Counter_F9 := 0
+}
+Return
+#MaxThreadsPerHotkey, 1
+
+; ♣============================== RECREATE CURRENT PALETTE ELEMENT ================================
+
+#/::							; recreate current palette element
+ClickPoint_X := Repeat_Glyph_X + Offset_Glyph		; a bit more to the right of the upper left corner of the selected cell
+ClickPoint_Y := Repeat_Glyph_Y + Offset_Glyph		; idem a bit lower
+Click, %ClickPoint_X%, %ClickPoint_Y%
+Sleep, Sleep_200
+; treatment of accidentals
+If PaletteSymbolOld in ,!,@,#,##,!!,@!,@#,1fb,1fn,1sn,1s#,3fb,3fbb,3sx,3s#,5fbb,5sx
+,upb,dnb,upn,ndn,sup,dns,xup,dnx,bupb,dnbb,ardn,arf,arup,ars
+    Goto, Finish_Repeat_Glyph				; see below 🎵
+; treatment of parentheses and brackets
+If PaletteSymbolOld in [],()				; parentheses and brackets
+    Goto, Par_Brack					; see below 🎵
+If PaletteSymbolOld in pss,ps*,psr,psc,pcc,pcr		; pedal lines
+{
+    Send {right}
+    Sleep, Sleep_100
+    Send {left}
+    Sleep, Sleep_50
+    Goto, Finish_Repeat_Glyph
+}
+If PaletteSymbol in ac,acs,ap,aps,g4,g16,g32,g8a,g16a,g32a	; grace note stays selected - facilitates adding more 
+    Goto, Finish_Repeat_Glyph				; see below 🎵 - see also (≈)
+Par_Brack:						; HERE 🎵	🎶	🎶
+Send !{left}
+Sleep, Sleep_100
+Finish_Repeat_Glyph:					; OR HERE 🎵	🎶	🎶
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Return
+
+; ♣================================= APPLY SYMBOLS FROM PALETTE  ==================================
+
+~z & a::					; apply symbols from palette
+Gosub, Nothing_Selected
+If (Nothing_Selected = 1) {
+    MsgBox, 4144, Apply Palette Symbols, Nothing selected!
+    Return
+}
+If (Show_Palettes = 0) {
+    MsgBox, 4144, Defined State Attention!, The Palettes side panel is not visible!`nPress F9.
+    Return
+}
+Gosub, Get_MU4_Window_Data
+Gosub, Full_Max_Check
+Gosub, Range_Selection_Check
+MouseGetPos, StartX, StartY			; position mouse
+Side_Bar_Tab := "pal"
+Pal_Downstroke := 0
+Pal_Upstroke := 0
+Prop_Downstroke := 0
+Gosub, F7_F8_F9_Tab_Title_Check			; if not present presses F9 and enters active tab
+InputBox, PaletteSymbol, Apply Symbols from Palette, , , W_IB, H_IB, IB_X, IB_Y, , , Help = Questionmark	;  (*change*?) 
+if ErrorLevel					; when Cancel is pressed
+    Return
+If PaletteSymbol not in %MatchListPalettes%
+{
+    MsgBox, 4144, Apply Symbols from Palette, No valid command.
+    Return
+}
+If (PaletteSymbol = "r")			; but the hotkey  WIN + /  works faster
+    PaletteSymbol := PaletteSymbolOld
+If (PaletteSymbol = "?") || (PaletteSymbol = "Help = Questionmark") {
+MsgBox, 4096, Info Palettes,
+(
+Enter a help shortcut or a symbol shortcut
+
+▼  Accidentals			?AC
+▼  Arpeggios & Glissandi		?AG
+▼  Articulations			?AR
+▼  Barlines			?BL
+▼  Beam Properties		?BE
+▼  Brackets			?BR
+▼  Breath's & Pauses		?BP
+▼  Clefs				?CL
+▼  Dynamics			?DY
+▼  Fingering			?FI
+▼  Fretboard Diagrams		?FD
+▼  Grace Notes			?GN
+▼  Guitar				?GT
+▼  Harp				?HA
+▼  Keyboard			?KB
+▼  Key Signatures			?KS
+▼  Layout			?LO
+▼  Lines				?LI
+▼  Noteheads			?NH
+▼  Ornaments			?OR
+▼  Pitch				?PI
+▼  Repeats & Jumps		?RJ
+▼  Tempo			?TM
+▼  Text				?TX
+▼  Time Signatures		?TS
+▼  Tremolo			?TR
+
+Repeat last command		R
+
+NB: if palette is open
+and macro finished
+Repeat last command		WIN + /
+
+Close palette search field		CapsLock + P
+and show Palette list
+
+Info Special Symbols		??
+)
+    InputBox, PaletteSymbol, Apply Symbols from Palette, , , W_IB, H_IB, IB_X, IB_Y, , , Enter Help or Symbol Shortcut	;  (*change*?) 
+    if ErrorLevel				; when Cancel is pressed
+    {
+        Click, %StartX%, %StartY%
+        Return
+    }
+}
+
+If (PaletteSymbol = "Enter Help or Symbol Shortcut") {
+    MsgBox, 4096, Apply Symbols from Palette, "Enter Help or Symbol Shortcut"`nis no valid input.`nThe macro will exit.
+    Return
+}
+
+If (PaletteSymbol = "?ac") {
+MsgBox, 4096, Accidentals - shortcuts,
+(
+In InputBox enter:
+
+Flat				!
+Natural				@
+Sharp				#
+Double sharp			##
+Double flat			!!
+Natural Flat			@!
+Natural Sharp			@#
+Arrow down quarter-tone flat	ARDN	ARF
+Arrow quarter-tone sharp		ARUP	ARS
+
+Gould arrow quartertone accidentals (24-EDO)
+
+Quarter-tone flat			UPB	↑♭	1FB
+Three-quarter-tones flat		DNB	↓♭	3FB
+Quarter-tone sharp		UPN	↑♮	1SN
+Quarter-tone flat			NDN	♮↓	1FN
+Three-quarter-tones sharp		SUP	♯↑	3S#
+Quarter-tone sharp		DNS	↓♯	1S#
+Five-quarter-tones sharp		XUP	×↑	5SX
+Three-quarter-tones sharp		DNX	↓×	3SX
+Three-quarter-tones flat		BUPB	♭↑♭	3FBB
+Five-quarter-tones flat		DNBB	↓♭♭	5FBB
+
+Add brackets to accidental		[ ]
+Add parentheses to element	( )
+)
+}
+
+If (PaletteSymbol = "?ag") {
+MsgBox, 4096, Arpeggios & Glissandi - shortcuts,
+(
+In InputBox enter:
+
+Arpeggio		ARP
+Arpeggio point up	ARU
+Arpeggio point down	ARD
+Arpeggio bracket		ARB	ARBR
+Arpeggio arrow up	ARRU
+Arpeggio arrow down	ARRD
+Glissando line straight	GLS
+Glissando line wavy	GLW
+Fall			FAL	FALL
+Doit			DOI	DOIT
+Plop			PLO	PLOP
+Scoop			SCO	SCOOP
+Slide out down		SOD	SLOD
+Slide out up		SOU	SLOU
+Slide in above		SIA	SLIA
+Slide in below		SIB	SLIB
+)
+}
+
+If (PaletteSymbol = "?ar") {
+MsgBox, 4096, Articulations - shortcuts,
+(
+In InputBox enter:
+
+Accent			A	>
+Accent staccato		A.	.A	>.	.>
+Bend			B
+Downbow		DB
+Fade in			FI
+Fade out			FO
+Harmonic		H
+Laissez vibrer		LV
+Louré			L.
+Marcato			M	^
+Marcato staccato		M.	.M	^.	.^
+Marcato tenuto		MT	TM	^_	_^
+Muted			+
+Open			O
+Portato			P.
+Sawtooth line segment	SLS
+Idem wide line segment	SWLS
+Snap pizzicato		SP
+Soft accent		SA	<>
+Soft accent staccato	SA.	<.>
+Soft accent tenuto		SAT	<_>
+Idem SAT staccato		SAT.	<_.>	<._>
+Staccato			.
+Staccatissimo		..
+Staccatissimo stroke	..S	S..	../	/..
+Staccatissimo wedge	..W	W..	..'	'..
+Stress			STR	'
+Tenuto			T	_
+Tenuto accent		TA	AT	_>	>_
+Tenuto staccato		T.	.T	_.	._
+Tremolo bar		TB
+Unstress			UNSTR
+Upbow			UB
+Vibrato large faster	VLF
+Vibrato large slowest	VLS
+Volume swell		VS
+)
+}
+
+If (PaletteSymbol = "?bl") {
+MsgBox, 4096, Barlines - shortcuts,
+(
+In InputBox enter:
+
+Single barline		|
+Double barline		||
+Start repeat barline 	|:
+End repeat barline		:|
+End-start repeat barline	:||:
+Heavy barline		HBL
+Heavy double barline	HDBL
+Dashed barline		DASH	----
+Final barline		FBL	|||
+Reverse final barline	RFBL
+Barline dotted		BL.	....
+Barline tick 1 span #	BT1
+Barline tick 2 span #	BT2
+Barline short 1 span #	BS1
+Barline short 2 span #	BS2
+
+# Reset barlines		RBL
+   using 'Properties'
+
+Combination
+┌─1─┐:‖:┌─2──		1:||:2
+)
+}
+
+If (PaletteSymbol = "?be") {
+MsgBox, 4096, Beam Properties - shortcuts,
+(
+In InputBox enter:
+
+MU4 Name				MU3 Name
+
+Auto beam		=AB	=AB	Auto beam
+No beam			=NB	=NB	No beam
+Break beam left		=BL	=SB	Start beam
+Join beams		=JB	=MB	Middle beam
+Break inner beams (eighth)	=BI8	=2B	Start 2nd level beam
+Break inner beams (16th)	=BI6	=3B	Start 3rd level beam
+
+Feathered beams #
+
+Decelerate		=FBD	=FBS	F-beam slower
+Accelerate		=FBA	=FBF	F-beam faster
+Reset FB's		=RFB
+
+# Select a beamed 16th or 32nd note
+)
+}
+
+If (PaletteSymbol = "?bp") {
+MsgBox, 4096, Breath's & Pauses - shortcuts,
+(
+In InputBox enter:
+
+Breath mark (comma)	BMC
+Breathmark tick-like	BMT
+Breathmark salzedo	BMS	SALZ
+Breathmark upbow-like	BMV
+Curved caesura		C)
+Caesura straight		C/
+Short caesura		C||
+Thick caesura		C//
+Caesura accent-like	CAL
+
+Fermata			FM
+Short fermata		SFM
+Short fermata Henze	SFMH
+Very short fermata		VSFM
+Long fermata		LFM
+Long fermata Henze	LFMH
+Very long fermata		VLFM
+)
+}
+
+If (PaletteSymbol = "?br") {
+MsgBox, 4096, Brackets - shortcuts,
+(
+⁞	In InputBox enter:
+⁞
+⁞	Bracket		[ [
+⁞	Brace		[ {
+⁞	Square		[S]
+⁞	Line		[L
+)
+}
+
+If (PaletteSymbol = "?cl") {
+MsgBox, 4096, Clefs - shortcuts,
+(
+In InputBox enter:
+
+Treble			CLT
+Treble 8va		CLT8VA
+Treble 15ma		CLT15MA
+Treble 8vb		CLT8VB
+Treble 15vb		CLT15VB
+Double Treble 8vb		CLDT8VB
+Treble optional 8vb	CLTO8VB
+French violin clef		CLFVC
+Soprano			CLS
+Mezzo Soprano		CLMS
+Alto			CLA
+Tenor			CLTEN
+Baritone			CLBAR
+Bass			CLB
+Bass 8va			CLB8VA
+Bass 15ma		CLB15MA
+Bass 8vb			CLB8VB
+Bass 15mb		CLB15MB
+Baritone F clef		CLBARF
+Subbass			CLSB
+Percussion		CLP
+Percussion 2		CLP2
+Tablature		CLTAB
+Tablature 4 lines		CLTAB4
+Tablature serif		CLTABS
+Tablature serif 4 lines	CLTABS4
+
+French 18th century
+Soprano			CLS18
+Alto			CLA18
+Tenor			CLT18
+F clef			CLF18
+
+19th century
+C clef H shape		CLC19
+F clef			CLF19
+
+French 20th century
+Soprano			CLS20
+Alto			CLA20
+Tenor			CLT20
+)
+}
+
+If (PaletteSymbol = "?dy") {
+MsgBox, 4096, Dynamics - shortcuts,
+(
+In InputBox enter:
+
+PPPPPP	PPPPP	PPPP	PPP	PP	P	MP
+FFFFFF	FFFFF	FFFF	FFF	FF	F	MF
+RF	RFZ	FZ	SF	SFZ	SFF	SFFZ	
+SFPP	SFP	FP	M*	R*	S*	Z*	N*
+
+You can REPLACE a single dynamic by selecting its note.
+In InputBox enter prefix = followed by the new dynamic.
+E.g.	=MF	=SFZ	=S*	=SFF	=FP	=SFPP
+
+mf < cresc pin		MF<
+# Cresc _ _ _ 		C	CINV
+# Dim _ _ _		D	DINV
+
+# CINV and DINV make the lines invisible
+)
+}
+
+If (PaletteSymbol = "?fi")
+{
+MsgBox, 4096, Fingering - shortcuts,
+(
+In InputBox enter:
+
+Piano		LH Guitar
+0	P0	0	0
+1	P1	1	1
+2	P2	2	2
+3	P3	3	3
+4	P4	4	4
+5	P5	5	5
+		T	TH
+
+Circled String	RH Guitar
+0	S0	p	-P
+1	S1	i	-I		
+2	S2	m	-M		
+3	S3	a	-A		
+4	S4	c	-C		
+5	S5	Th pos	TP
+6	S6	
+
+Lute
+RH thumb		LT
+RH first finger		L1
+RH second finger		L2
+RH third finger		L3
+
+Finger substitution above	FSA
+Finger substitution below	FSB
+)
+}
+
+If (PaletteSymbol = "?fd")
+{
+MsgBox, 4096, Fretboard diagrams - shortcuts,
+(
+QA		QA7		QAm
+QB		QB7		QBm
+QC		QC7		QCm
+QD		QD7		QDm
+QE		QE7		QEm
+QF		QF7		QFm
+QG		QG7		QGm
+)
+}
+
+If (PaletteSymbol = "?gn") {
+MsgBox, 4096, Grace Notes - shortcuts,
+(
+In InputBox enter:
+
+Acciaccatura		AC
+Acciaccatura + slur #	ACS
+Appogiatura		AP
+Appogiatura + slur #	APS
+Grace quarter		G4
+Grace 16th		G16
+Grace 32nd		G32
+Grace eight after		G8A
+Grace 16th after		G16A
+Grace 32nd after		G32A
+
+# Grace note diatonically raised
+
+NB: if palette is open and macro finished
+Repeat last command	WIN + /
+to add more grace notes
+)
+}
+
+If (PaletteSymbol = "?gt") {
+MsgBox, 4096, Guitar - shortcuts,
+(
+In InputBox enter:
+
+Barré line		BL
+Palm mute		PM
+Let ring			LR
+Bend			B
+Tremolo bar		TB
+Guitar vibrato		GV
+Guitar vibrato wide	GVW
+Distort			DIS
+Overdrive		OD
+Harmonics		HAR
+Jazz tone			JT
+
+LH Guitar	Circled String	RH Guitar
+
+0	0	0	S0	p	-P
+1	1	1	S1	i	-I
+2	2	2	S2	m	-M		
+3	3	3	S3	a	-A
+4	4	4	S4	c	-C
+5	5	5	S5	Th pos	TP
+T	TH	6	S6	
+
+
+Lute
+RH thumb		LT
+RH first finger		L1
+RH second finger		L2
+RH third finger		L3
+)
+}
+
+If (PaletteSymbol = "?ha") {
+MsgBox, 4096, Harp - shortcuts,
+(
+In InputBox enter:
+
+Harp pedal diagram	HPED
+Harp ped text diagram	HTXT
+)
+}
+
+If (PaletteSymbol = "?kb") {
+MsgBox, 4096, Keyboard - shortcuts,
+(
+In InputBox enter:
+
+|___________|	Pedline start-release		PSR
+
+|___________/	Pedline start-continue		PSC
+
+\___________/	Pedline continue-continue		PCC
+
+\___________|	Pedline continue-release		PCR
+
+Ped ________*	Pedline start-asterisk		PS*
+
+Ped ________|	Pedline start-stop (release)		PSS
+)
+}
+
+If (PaletteSymbol = "?ks") {
+MsgBox, 4096, Key Signatures - shortcuts,
+(
+In InputBox enter:
+
+MAJOR	MINOR	ENTER
+
+G	E	1#
+D	B	2#
+A	F♯	3#
+E	C♯	4#
+B	G♯	5#
+F♯	D♯	6#
+C♯	A♯	7#
+
+F	D	1b
+B♭	G	2b
+E♭	C	3b
+A♭	F	4b
+D♭	B♭	5b
+G♭	E♭	6b
+C♭	A♭	7b
+
+C	A	0#0b
+
+Open Atonal	XSIG
+)
+}
+
+If (PaletteSymbol = "?or") {
+MsgBox, 4096, Ornaments - shortcuts,
+(
+In InputBox enter:
+
+Tremblement			TRMB
+Turn				+T
+Turn with slash			+T/
+Inverted turn			-T
+Trill				TR
+Short trill			SHTR
+Trill line				TRL
+Mordent				MOR
+Up mordent			UPM
+Down mordent			DNM
+Mordent + upper prefix		MUP
+Slide				SL	SLIDE
+Prall Mordent			PRM
+Up prall				UPR
+Prall down			PDN
+Prall up				PUP
+Line Prall				LPR
+Upprall line			UPL
+Downprall line			DPL
+Prall prall line			PPL
+)
+}
+
+If (PaletteSymbol = "?li") {
+MsgBox, 4096, Lines - shortcuts,
+(
+Octave lines in	▼ Pitch
+Pedal lines in	▼ Keyboard
+Text lines in	▼ Text
+Ornament lines in ▼ Ornaments
+Guitar lines in	▼ Guitar
+Volta lines in	▼ Repeats & Jumps
+mf cresc pin in	▼ Dynamics
+
+In InputBox enter:
+
+Ambitus #		AMB
+Cresc--- *			C  CINV
+Dim--- *			D  DINV
+Downprall line		DPL
+Guitar vibrato		GV
+Guitar vibrato wide	GVW
+Let ring			LR
+Line			L
+mf cresc pin		MF<
+Note anchored line	NAL
+Palm mute		PM
+Prall prall line		PPL
+Prima volta		1V
+Seconda volta		2V
+Seconda volta open	2VO
+Terza volta		3V
+Text line			TL
+Staff text line		STTL
+System text line		SYTL
+Tremolo sawtooth wide	TSAW
+Trill line			TRL
+Upprall line		UPL
+Vibrato sawtooth		VSAW
+
+# Select clef
+* CINV and DINV make the lines invisible
+
+PEDAL
+
+|___________|	Pedline start-release		PSR
+|___________/	Pedline start-continue		PSC
+\___________/	Pedline continue-continue		PCC
+\___________|	Pedline continue-release		PCR
+Ped ________*	Pedline start-asterisk		PS*
+Ped ________|	Pedline start-stop			PSS
+
+
+OCTAVES		Input 8VA 8VB 15MA 15MB 22MA 22MB
+)
+}
+
+If (PaletteSymbol = "?lo") {
+MsgBox, 4096, Layout - shortcuts,
+(
+In InputBox enter:
+
+System break		SB
+Page break		PB
+Section break		XB
+Staff spacer down		SSD
+Staff spacer up		SSU
+Staff spacer fixed		SSF
+Staff type change		STC
+Insert vertical frame	IVF
+Insert horizontal frame	IHF
+Insert text frame		ITF
+Insert one measure	I1MBS
+before selection
+Keep measures on		KMOSS
+same system
+)
+}
+
+If (PaletteSymbol = "?nh") {
+MsgBox, 4096, Noteheads - shortcuts,
+(
+In InputBox enter:
+
+Alt brevis			*AB
+Circled			*C
+Circled large		*CL
+Cross			*X
+Diamond			*D
+Diamond old		*DO
+Heavy cross		*HX
+Heavy cross hat		*HXH
+Large arrow		*LA
+Large diamond		*LD
+Normal			*N
+Plus			*+
+Slash			*//
+Slashed forwards		*/
+Slashed backwards	*\
+Triangle up		*TU
+Triangle down		*TD
+With X			*XX
+X circle			*XC
+
+Do			DO
+Re			RE
+Mi			MI
+Fa			FA
+Sol			SOL
+La			LA
+Ti			TI
+
+Add parentheses
+to element		( )
+)
+}
+
+If (PaletteSymbol = "?pi") {
+MsgBox, 4096, Pitch Lines - shortcuts,
+(
+In InputBox enter:
+
+8va alta			8va
+8va bassa		8vb
+15ma alta		15ma
+15ma bassa		15mb
+22ma alta		22ma
+22ma bassa		22mb
+Ambitus *		AMB
+
+* Select clef
+)
+}
+
+If (PaletteSymbol = "?rj") {
+MsgBox, 4096, Repeats and Jumps - shortcuts,
+(
+In InputBox enter:
+
+Repeat last measure		RLM
+Repeat last 2 measures		R2M
+Repeat last 4 measures		R4M
+Segno				SEG
+Segno variation §			SEGV
+Coda Φ				CODA
+Coda variation			CODAV
+Fine				FINE
+To Coda text			TCT
+To Coda symbol Φ			TCS
+Da Capo				DC
+Da Capo al Fine			DCAF
+Da Capo al Coda			DCAC
+D.S. al Coda			DSAC
+D.S. al Fine			DSAF
+D.S.				DS
+Da Capo al Double Coda		DCADC
+D.S.S al Coda			DSSAC
+D.S.S. al Double Coda		DSSADC
+D.S.S. al Fine			DSSAF
+Da Coda				DACODA
+Da Double Coda			DA2CODA
+Prima volta			1V
+Seconda volta			2V
+Seconda volta, open		2VO
+Terza volta			3V
+Vibrato sawtooth - line		VIBSAW
+Tremolo sawtooth wide - line	TREMSAW
+Start repeat			|:
+End repeat			:|
+End-start repeat			:||:
+
+Combination
+┌─1─┐:‖:┌─2──			1:||:2
+)
+}
+
+If (PaletteSymbol = "?tm") {
+MsgBox, 4096, Tempo - shortcuts,
+(
+In InputBox enter:
+
+Half note =80		M2	MINIM
+Half note dotted =80	M2.	MINIM.
+Quarter =80		M4	CROTCHET
+Quarter dotted =80	M4.	CROTCHET.
+Eight =80		M8	QUAVER
+Eight dotted =80		M8.	QUAVER.
+
+Grave 35			GRA	GRAV	GRAVE
+Largo 50			LAR	LARG	LARGO	
+Lento 52			LEN	LENT	LENTO
+Adagio 71		ADA	ADAG	ADAGI	ADAGIO
+Andante 92		AND	ANDA	ANDAN	ANDANTE
+Moderato 114		MOD	MODE	MODER	MODERATO
+Allegretto 116		ALTO	A<	ALLEGRE	ALLEGRETTO
+Allegro 144		ALRO	A>	ALLEGRO
+Vivace 172		VIV	VIVA	VIVAC	VIVACE
+Presto 187		PRE	PRES	PREST	PRESTO
+Prestissimo 200		ISSIMO	PRESTISSIMO
+
+Accelerando		ACCEL
+Allargando		ALLAR
+Ritardando		RITAR
+Swing			SWING
+Straight			STRAIG
+Calando			CALAN
+Lentando		LENTA
+Morendo		MOREN
+Precipitando		PRECI
+Smorzando		SMORZ
+Sostenuto		SOSTE
+Stringendo		STRIN
+
+METRIC MODULATION
+
+Quarter=dotted quarter		MM4=4.		MMC=C.
+Dotted quarter=quarter		MM4.=4		MMC.=C
+Dotted eight=quarter		MM8.=4		MMQ.=C
+Half=quarter			MM2=4		MMM=C
+Quarter=half			MM4=2		MMC=M
+Eight=eight			MM8=8		MMQ=Q
+Quarter=quarter			MM4=4		MMC=C
+)
+}
+
+If (PaletteSymbol = "?tx") {
+MsgBox, 4096, Text - shortcuts,
+(
+In InputBox enter:
+
+Stafftext			STT
+Stafftext line		STTL
+System text		SYT
+System text line		SYTL
+Expression text 		EXT
+Text line			TL
+
+Arco			ARC
+Col legno		CL
+Détaché			DT
+Distort			DIS
+Harmonics		HAR
+Change instrument 	CI
+Jazz tone			JT
+Legato			LG
+Martelé			MAR
+Normal			NM
+Measure number		MN
+Mute			MU
+Open			OP
+Overdrive		OD
+Pizzicato			PIZ
+Rehearsal mark 		RM
+Sul ponticello		SULP
+Sul tasto			SULT
+Tremolo			TREM
+Vibrato			VIB
+
+S/A Soprano/Alto		S/A
+T/B Tenor/Bass		T/B
+T/L Tenor Lead		T/L
+B/B Bari/Bass		B/B
+)
+}
+
+If (PaletteSymbol = "?tr") {
+MsgBox, 4096, Tremolos - shortcuts,
+(
+In InputBox enter:
+
+1/8	stroke through stem	8	Q
+1/16	stroke through stem	16	SQ
+1/32	stroke through stem	32	DSQ
+1/64	stroke through stem	64	HDSQ
+
+1/8	between notes		-8-	-Q-
+1/16	between notes		-16-	-SQ-
+1/32	between notes		-32-	-DSQ-
+1/64	between notes		-64-	-HDSQ-
+
+Buzzroll				BR	BUZZ
+)
+}
+
+If (PaletteSymbol = "?ts") {
+MsgBox, 4096, Time Signatures - shortcuts,
+(
+In InputBox enter:
+
+FOR		ENTER
+
+2/4		2/4
+3/4		3/4
+4/4		4/4
+5/4		5/4
+6/4		6/4
+C		C4/4
+2/2		2/2
+Cut time ₵	C2/2
+Bach 2/2		B2/2
+3/2		3/2
+4/2		4/2
+3/8		3/8
+4/8		4/8
+5/8		5/8
+6/8		6/8
+7/8		7/8
+9/8		9/8
+Cut 3 #		C9/8
+12/8		12/8
+
+# Cut triple time (9/8)
+)
+}
+
+If (PaletteSymbol = "??")
+    Gosub, Info_Special_Symbols				; searchterm Info_Special_Symbols:
+If PaletteSymbol in ?,??,?ac,?ag,?ar,?be,?bl,?bp,?br,?cl,?dy,?fd,?fi,?gn,?gt,?ha,?kb,?ks,?li,?lo,?nh,?or,?pi,?rj,?tx,?tr,?ts,?tm
+{
+    InputBox, PaletteSymbol, Apply Symbols from Palette, , , W_IB, H_IB, IB_X, IB_Y, , , Enter Symbol Shortcut	;  (*change*?) 
+    if ErrorLevel				; when Cancel is pressed
+        Return
+}
+If (PaletteSymbol = "Enter Symbol Shortcut") {
+    MsgBox, 4096, Apply Symbols from Palette, "Enter Symbol Shortcut" is no valid input.`nThe macro will exit.
+    Return
+}
+PaletteSymbolOld := PaletteSymbol			; stores value in 'PaletteSymbolOld' for InputBox repeat command R. But WIN + / works faster
+If (PaletteSymbol = "rbl")					; Reset (barline) span to default - needed for tick and short barlines
+    Gosub, Reset_short_barlines				; below - searchterm Reset_short_barlines:
+If PaletteSymbol in fsa,fsb				; finger substitution above/below
+    Gosub, Finger_Substitution				; uses window 'Special characters'
+If PaletteSymbol in ivf,ihf,itf,i1mbs			; insert vertical/horizontal/text frame/1 measure
+    Gosub, Insert_Frame					; below - searchterm Insert_Frame:
+If (PaletteSymbol = "nal") {				; note anchored line - needs range or list selection
+    Return_to_Canvas := "fast"
+;    Send ^{f12}					; MU4 custom shortcut - could replace all lines except Goto, Finish_RTC
+    Send !a						; menu 'Add'
+    Sleep, Sleep_500
+    Send {up}
+    Sleep, Sleep_100
+    Send {right}
+    Sleep, Sleep_100
+    Send {up}
+    Sleep, Sleep_100
+    Send {space}
+    Sleep, Sleep_100
+    Goto, Finish_RTC					; see below 🎵 - find line fast with (₲)
+}
+If PaletteSymbol in =pppppp,=ppppp,=pppp,=ppp,=pp,=p,=mp,=mf,=f,=ff,=fff,=ffff,=fffff,=ffffff
+,=fp,=pf,=sf,=sfz,=sff,=sffz,=sfp,=sfpp,=rfz,=rf,=fz,=m*,=r*,=s*,=z*,=n*
+{
+    ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Note_Pitch.png
+    If (ErrorLevel = 1) {			; no note
+        MsgBox, 4144, Replace Dynamic, No note selected!
+        Return
+    }
+    Loop, 7						; allow to skip max 7 elements
+    {							; also while passing notes in other voices
+        Send !{right}
+        Sleep, Sleep_150				; give move and appearance of statusbar some time
+        ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Dynamic.png
+        If (A_Index > 6) && (ErrorLevel = 1)		; no dynamic
+            Continue
+        If (ErrorLevel = 0)				; dynamic found
+            Break
+        If (A_Index = 7) && (ErrorLevel = 1)
+        {
+            MsgBox, 4144, Replace Dynamic, No dynamic found!
+            Return
+        }
+
+    }
+    Send {del}
+    Sleep, Sleep_50
+}
+
+Send ^{F9}						; Palette Search (Ctrl+F9) (*change*?)
+Sleep, Sleep_200					; after sending the identifier the macro continues at (☼)
+
+
+;  ♣========================== ACCIDENTALS 'STANDARD' and 'GOULD' =================================
+; NB this is a selection containing frequently used accidentals
+; shortcuts in this section
+; ,!,@,#,##,!!,@!,@#,1fb,1fn,1sn,1s#,3fb,3fbb,3sx,3s#,5fbb,5sx
+; ,upb,dnb,upn,ndn,sup,dns,xup,dnx,bupb,dnbb,ardn,arf,arup,ars,[],()
+; NEW in MU4: ardn,arf,arup,ars
+
+If (PaletteSymbol = "!")					; Flat
+    Send, flat
+If (PaletteSymbol = "@")					; Natural
+    Send, natura
+If (PaletteSymbol = "#")					; Sharp
+    Send, shar
+If (PaletteSymbol = "##")					; Double sharp
+    Send, ble sh
+If (PaletteSymbol = "!!")					; Double flat
+    Send, ble f
+If (PaletteSymbol = "@!")					; Natural Flat
+    Send, ral f
+If (PaletteSymbol = "@#")					; Natural Sharp
+    Send, l sh
+If (PaletteSymbol = "1fb") || (PaletteSymbol = "upb")		; ↑♭ - Gould Quarter-tone flat
+    Send, -tone f
+If (PaletteSymbol = "3fb") || (PaletteSymbol = "dnb")		; ↓♭ - Gould Three-quarter-tones flat
+    Send, three-
+If (PaletteSymbol = "1sn") || (PaletteSymbol = "upn")		; ↑♮ - Gould Quarter-tone sharp
+    Send, -tone s
+If (PaletteSymbol = "5sx") || (PaletteSymbol = "xup")		; ×↑ - Gould Five-quarter-tones sharp
+    Send, fiv
+If (PaletteSymbol = "5fbb") || (PaletteSymbol = "dnbb")	; ↓♭♭ - Gould Five-quarter-tones flat
+    Send, fiv
+If (PaletteSymbol = "1fn") || (PaletteSymbol = "ndn")		; ♮↓ - Gould Quarter-tone flat
+    Send, -tone f
+If (PaletteSymbol = "3s#") || (PaletteSymbol = "sup")		; ♯↑ - Gould Three-quarter-tones sharp
+    Send, three-
+If (PaletteSymbol = "1s#") || (PaletteSymbol = "dns")		; ↓♯ - Gould Quarter-tone sharp
+    Send, -tone s
+If (PaletteSymbol = "3sx") || (PaletteSymbol = "dnx")		; ↓× - Gould Three-quarter-tones sharp
+    Send, three-
+If (PaletteSymbol = "3fbb") || (PaletteSymbol = "bupb")		; ♭↑♭ - Gould Three-quarter-tones flat
+    Send, three-
+If (PaletteSymbol = "arf") || (PaletteSymbol = "ardn")		; Arrow down - flat (lower by one quarter-tone)
+    Send, arrow d
+If (PaletteSymbol = "ars") || (PaletteSymbol = "arup")		; Arrow up - sharp (raise by one quarter-tone)
+    Send arrow u
+If (PaletteSymbol = "[]")					; Add brackets to accidental
+    Send, dd b
+If (PaletteSymbol = "()")					; Add parentheses to element
+    Send, dd p
+
+; ♣===================================== ARPEGGIOS and GLISSANDI ==================================
+; shortcuts in this section
+; ,arp,aru,ard,arru,arrd,arb,arbr,gls,glw
+; ,fal,fall,doi,doit,plo,plop,sco,scoop,sod,slod,sou,slou,sia,slia,sib,slib
+; no downstrokes needed
+
+If PaletteSymbol in arp,aru,ard,arru,arrd,arb,arbr,gls,glw
+,fal,fall,doi,doit,plo,plop,sco,scoop,sod,slod,sou,slou,sia,slia,sib,slib
+    Return_to_Canvas := "fast"
+
+If (PaletteSymbol = "arp")				; Arpeggio
+    Send arpe
+If (PaletteSymbol = "aru")				; Up arpeggio - point up
+    Send up a
+If (PaletteSymbol = "ard")				; Down arpeggio - point down
+    Send n a
+If (PaletteSymbol = "arb") || (PaletteSymbol = "arbr")	; Bracket arpeggio
+    Send et a
+If (PaletteSymbol = "arru")				; Arp arrow up - up arpeggio straight
+    Send p arpeggio s
+If (PaletteSymbol = "arrd")				; Arp arrow down - down arpeggio straight
+    Send n arpeggio s
+If (PaletteSymbol = "gls")				; Gliss line straight - straight glissando
+    Send t g
+If (PaletteSymbol = "glw")				; Wavy glissando
+    Send wavy
+If (PaletteSymbol = "fal") || (PaletteSymbol = "fall")	; Fall
+    Send fal
+If (PaletteSymbol = "doi") || (PaletteSymbol = "doit")	; Doit
+    Send doi
+If (PaletteSymbol = "plo") || (PaletteSymbol = "plop")	; Plop
+    Send plo
+If (PaletteSymbol = "sco") || (PaletteSymbol = "scoop")	; Scoop
+    Send sco
+If (PaletteSymbol = "sod") || (PaletteSymbol = "slod")	; Slide out down
+    Send t d
+If (PaletteSymbol = "sou") || (PaletteSymbol = "slou")	; Slide out up
+    Send t u
+If (PaletteSymbol = "sia") || (PaletteSymbol = "slia")	; Slide in above
+    Send in a
+If (PaletteSymbol = "sib")  || (PaletteSymbol = "slib")	; Slide in below
+    Send e in b
+
+; ♣=================================== ARTICULATIONS ========================================
+; shortcuts in this section
+; ,a,.,..,t,t.,.t,l.,.l,m,a.,.a,lv,m.,.m,mt,p.,tm,..s,..w,str,ta,at
+; ,unstr,sa,sa.,sat,sat.,fi,fo,vs,sls,swls,vlf,vls,o,+,h,ub,db,sp,b,tb,>,>.,.>,_,_.,._,^,^.,.^,^_,_^,../,/..,..','..,_>,>_,<>,<.>,<_>,<_.>,<._>,'
+; no downstrokes needed except 'open' which needs a special treatment
+; 'tremolo bar' and 'bend' are also in guitar palette
+
+If PaletteSymbol in a,.,..,t,t.,.t,l.,.l,m,a.,.a,lv,m.,.m,mt,p.,tm,..s,..w,w..,str,ta,at
+,unstr,sa,sa.,sat,sat.,fi,fo,vs,sls,swls,vlf,vls,o,+,h,ub,db,sp,b,tb,>,>.,.>,^,^.,.^,^_,_^
+,../,/..,..','..,_>,>_,<>,<.>,<_>,<_.>,<._>,'
+    Return_to_Canvas := "fast"
+If PaletteSymbol in a,>				; Sforzato, Accent above
+    Send accent a
+If (PaletteSymbol = ".")			; Staccato	
+    Send stac
+If PaletteSymbol in ..				; Staccatissimo
+    Send staccati
+If PaletteSymbol in t,_				; Tenuto
+    Send tenu
+If PaletteSymbol in t.,.t,l.,.l,p.,_.,._	; Tenuto staccato) (Louré) (Portato)
+    Send lou
+If PaletteSymbol in m,^				; Marcato above
+    Send rcato a
+If PaletteSymbol in a.,.a,>.,.> 		; Accent-staccato above
+    Send -staccato a
+If (PaletteSymbol = "lv")			; Laissez vibrer (l.v.) above
+    Send (l.
+If PaletteSymbol in m.,.m,^.,.^			; Marcato-staccato above
+    Send ato-s
+If PaletteSymbol in mt,tm,^_,_^			; Marcato-tenuto above
+    Send marcato-t
+If PaletteSymbol in ..s,s..,../,/..		; Staccatissimo stroke above
+    Send mo s
+If PaletteSymbol in ..w,w..,..','..		; Staccatissimo wedge above
+    Send mo w
+If PaletteSymbol in str,'			; Stress above
+    Send ss a
+If PaletteSymbol in ta,at,_>,>_			; Tenuto-accent above	
+    Send uto-a
+If (PaletteSymbol = "unstr")			; Unstress above
+    Send uns
+If PaletteSymbol in sa,<>			; Soft accent above
+    Send t accent a
+If PaletteSymbol in sa.,<.>			; Soft accent-staccato above
+    Send t accent-s
+If PaletteSymbol in sat,<_>			; Soft accent-tenuto above
+    Send t accent-tenuto a
+If PaletteSymbol in sat.,<_.>,<._>		; Soft accent-tenuto-staccato above
+    Send t-tenuto-
+If (PaletteSymbol = "fi")			; Fade in
+    Send ade i
+If (PaletteSymbol = "fo")			; Fade out
+    Send ade o
+If (PaletteSymbol = "vs")			; Volume swell
+    Send swe
+If (PaletteSymbol = "sls")			; Sawtooth line segment
+    Send h l
+If (PaletteSymbol = "swls")			; Sawtooth wide line segment
+    Send wide s
+If (PaletteSymbol = "vlf")			; Vibrato large, faster
+    Send e, f
+If (PaletteSymbol = "vls")			; Vibrato large, slowest
+    Send e, s
+If (PaletteSymbol = "+")			; Muted (closed)
+    Send ted (
+If (PaletteSymbol = "h")			; Harmonic
+    Send monic
+If (PaletteSymbol = "ub")			; Up bow
+    Send up b
+If (PaletteSymbol = "db")			; Down bow
+    Send wn b
+If (PaletteSymbol = "sp")			; Snap pizzicato above
+    Send sn
+If (PaletteSymbol = "b")			; Bend
+    Send ben
+If (PaletteSymbol = "tb")			; Tremolo bar
+    Send lo b
+If (PaletteSymbol = "o") {			; Open - sending 'open' results in 5 glyphs
+    Send open					; each in its own palette -> special route
+    Pal_DownStroke := 2
+}
+
+; ♣=========================================== BARLINES ===========================================
+; shortcuts in this section
+; ,|,||,|:,:|,:||:,1:||:2,dash,----,fbl,|||,bl.,....,bt1,bt2,bs1,bs2,rfbl,hbl,hdbl
+; NB: after sending 'dash' appear the dashed barline AND Tick barline 1 (incorrectly named in v 1.02)
+
+If PaletteSymbol in |,||,|:,:|,:||:,1:||:2,dash,----,fbl,|||,bl.,....,bt1,bt2,bs1,bs2,rfbl,hbl,hdbl
+    Return_to_Canvas := "fast"
+If (PaletteSymbol = "|")					; Single barline
+    Send gle b
+If (PaletteSymbol = "||")					; Double barline
+    Send ble b
+If (PaletteSymbol = "|:")					; Left (start) repeat sign
+    Send t (st
+If (PaletteSymbol = ":|")					; Right (end) repeat sign
+    Send ht (
+If (PaletteSymbol = "dash") || (PaletteSymbol = "----")		; Dashed barline
+    Send das
+If (PaletteSymbol = "fbl") || (PaletteSymbol = "|||")		; Final barline
+    Send ina
+If (PaletteSymbol = ":||:") || (PaletteSymbol = "1:||:2")	; Right and left repeat sign
+    Send ht a							; special route for 1:||:2 setting the voltas
+If (PaletteSymbol = "bl.") || (PaletteSymbol = "....")		; Dotted barline
+    Send ted b
+If (PaletteSymbol = "rfbl")					; Reverse final barline
+    Send se f
+If (PaletteSymbol = "hbl")					; Heavy barline
+    Send y b
+If (PaletteSymbol = "hdbl")					; Heavy double barline
+    Send y do
+If (PaletteSymbol = "bt2")					; Tick barline 2 - barline tick 2 span
+    Send k ba
+If (PaletteSymbol = "bs1")					; Barline short 1 span - short barline
+    Send short b
+If (PaletteSymbol = "bs2")					; Barline short 2 span - short barline 2
+    Send t barline 2
+If (PaletteSymbol = "bt1") {					; Tick barline 1 - barline tick 1 span
+    Send das							; needs extra Pal_DownStroke, incorrectly named 'dashed barline'
+    Pal_DownStroke := 1						; cell has duplicate name 'dashed'
+}
+
+; ♣=============================== BEAM PROPERTIES =====================================
+; shortcuts in this section
+; ,=ab,=nb,=bl,=sb,=jb,=mb,=bi8,=2b,=bi6,=3b,=fbd,=fbs,=fba,=fbf,=rfb
+
+If (PaletteSymbol = "=ab")			; Autobeam
+    Send auto
+If (PaletteSymbol = "=nb")			; No beam
+    Send no b
+If PaletteSymbol in =bl,=sb			; Break beam left - Start beam
+    Send ak b
+If PaletteSymbol in =jb,=mb			; Join beams - Middle beam
+    Send oin b
+If PaletteSymbol in =bi8,=2b			; Break inner beams (eighth) -Start second level beam - Beam 16th sub
+    Send s (e
+If PaletteSymbol in =bi6,=3b			; Break inner beams (16th) - Start third level beam - Beam 32th sub
+    Send s (1
+
+; for the next 2 hotkeys select the beam. drawback is: no return to canvas possible with ^!+{right}
+; these hotkeys operate within the palettes sidepanel
+/*
+If PaletteSymbol in =fbd,=fbs			; Feathered beam: decelerate - Feathered beam slower
+    Send m: d
+If PaletteSymbol in =fba,=fbf			; Feathered beam: accelerate - Feathered beam faster
+    Send m: a
+*/
+
+; for these hotkeys select a beamed 16th or 32nd note - idem for hotkey  =RFB  to reset FB's
+; this is the preferred method - the hotkeys operate within the properties sidepanel
+If PaletteSymbol in =fbd,=fbs,=fba,=fbf,=rfb
+{
+    If (PaletteSymbol = "=rfb")			; reset feathered beam
+        Prop_DownStroke := 7
+    If (PaletteSymbol = "=fbd") || (PaletteSymbol = "=fbs")	; feathered beam decelerate/slower
+        Prop_DownStroke := 8
+    If (PaletteSymbol = "=fba") || (PaletteSymbol = "=fbf")	; feathered beam accelerate/faster
+        Prop_DownStroke := 9
+    Gosub, Feathered_Beams				; search using ₮ (or Feathered_Beams:)
+}
+
+; ♣========================================== BRACKETS ============================================
+; shortcuts in this section
+; ,[[,[{,[s],[l
+
+If (PaletteSymbol = "[[")				; Bracket - extended route search (҂)
+    Send brac
+If (PaletteSymbol = "[{")				; Brace
+    Send brace
+If (PaletteSymbol = "[s]")				; Square
+    Send sq
+If (PaletteSymbol = "[l") {			; Line - - extended route search (҂)
+    Send brac
+    Pal_Downstroke := 3
+}
+
+;  ♣================================== BREATHS and PAUSES =========================================
+; shortcuts in this section
+; ,fm,sfm,lfm,lfmh,sfmh,vlfm,vsfm
+; ,bmc,bmt,bms,salz,bmv,c),c/,c||,c//,cal
+
+If (PaletteSymbol = "fm")					; Fermata
+    Send fer
+If (PaletteSymbol = "sfm")					; Short fermata
+    Send t fer
+If (PaletteSymbol = "lfm")					; Long fermata
+    Send long fer
+If (PaletteSymbol = "lfmh")					; Long fermate Henze
+    Send g fermata (
+If (PaletteSymbol = "sfmh")					; Short fermate Henze
+    Send t fermata (
+If (PaletteSymbol = "vlfm")					; Very long fermata
+    Send y long
+If (PaletteSymbol = "vsfm")					; Very short fermata
+    Send y sh
+If (PaletteSymbol = "bmc")					; Breath mark (comma)
+    Send a)
+If (PaletteSymbol = "bmt")					; Breathmark (tick-like)
+    Send (ti
+If (PaletteSymbol = "bms") || (PaletteSymbol = "salz")		; Breathmark (Salzedo)
+    Send salz
+If (PaletteSymbol = "bmv")					; Breathmark (upbow-like)
+    Send w-
+If (PaletteSymbol = "c)")					; Curved caesura
+    Send cur
+If (PaletteSymbol = "c||")					; Short caesura
+    Send rt c
+If (PaletteSymbol = "c//")					; Thick caesura
+    Send hic
+If (PaletteSymbol = "c/") { 					; Caesura straight
+    Send ae
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "cal") {					; Caesura accent-like
+    Send ae
+    Pal_DownStroke := 5
+}
+
+; ♣========================================== CLEFS ===============================================
+; shortcuts in this section
+; ,clt,clt8va,clt15ma,clt8vb,clt15vb,cldt8vb,clto8vb,clfvc,cls,clms,cla,clten,clbar
+; ,clb,clb8va,clb15ma,clb8vb,clb15mb,clbarf,clsb,clp,clp2,cltab,cltab4
+; ,clc19,cls18,cla18,clt18,clf18,cls20,cla20,clt20,clf19,cltabs,cltabs4
+
+
+If (PaletteSymbol = "clt")					; Treble
+    Send treb
+If (PaletteSymbol = "cla")					; Alto
+    Send alto c
+If (PaletteSymbol = "clb")					; Bass
+    Send bass c
+If (PaletteSymbol = "clp")					; Percussion
+    Send perc
+If (PaletteSymbol = "clp2")					; Percussion 2
+    Send percussion 2
+If (PaletteSymbol = "cltab")					; Tablature
+    Send tab
+If (PaletteSymbol = "cltab4")					; Tablature 4 lines
+    Send tablature 4
+If (PaletteSymbol = "clt8va")					; Treble clef 8va alta
+    Send e clef 8va a
+If (PaletteSymbol = "clt15ma")					; Treble clef 15ma alta
+    Send e clef 15ma a
+If (PaletteSymbol = "clt8vb")					; Treble clef 8va bassa
+    Send e clef 8va b
+If (PaletteSymbol = "clt15vb")					; Treble clef 15ma bassa
+    Send e clef 15ma b
+If (PaletteSymbol = "cldt8vb")					; Double Treble clef 8va bassa on 2nd line
+    Send on 2n
+If (PaletteSymbol = "clto8vb")					; Treble clef optional 8va bassa
+    Send opt
+If (PaletteSymbol = "clfvc")					; French violin clef
+    Send h v
+If (PaletteSymbol = "cls")					; Soprano clef
+    Send no c
+If (PaletteSymbol = "clms")					; Mezzo-soprano clef
+    Send mez
+If (PaletteSymbol = "clten")					; Tenor clef
+    Send tenor c
+If (PaletteSymbol = "clbar")					; Baritone clef (C clef)
+    Send  (c c
+If (PaletteSymbol = "clb8va")					; Bass clef 8va alta
+    Send s clef 8va a
+If (PaletteSymbol = "clb15ma")					; Bass clef 15ma alta
+    Send s clef 15ma a
+If (PaletteSymbol = "clb8vb")					; Bass clef 8va bassa
+    Send s clef 8va b
+If (PaletteSymbol = "clb15mb")					; Bass clef 15ma bassa
+    Send s clef 15ma b
+If (PaletteSymbol = "clbarf")					; Baritone clef (F clef)
+    Send (f c
+If (PaletteSymbol = "clsb")					; Subbass clef
+    Send sub
+If (PaletteSymbol = "clc19")					; C clef, H shape (19th century)
+    Send f,
+If PaletteSymbol in cls18,cla18,clt18,clf18
+    Send ch, 1							; Soprano clef (French, 18th century)
+If (PaletteSymbol = "cla18")					; Alto clef (French, 18th century)
+    Pal_DownStroke := 1
+If (PaletteSymbol = "clt18")					; Tenor clef (French, 18th century)
+    Pal_DownStroke := 2
+If (PaletteSymbol = "clf18")					; F clef (French, 18th century)
+    Pal_DownStroke := 3
+If PaletteSymbol in cls20,cla20,clt20
+    Send ch, 2							; Soprano clef (French, 20th century)
+If (PaletteSymbol = "cla20")					; Alto clef (French, 20th century)
+    Pal_DownStroke := 1
+If (PaletteSymbol = "clt20")					; Tenor clef (French, 20th century)
+    Pal_DownStroke := 2
+If (PaletteSymbol = "clf19")					; F clef (19th century)
+    Send f (1
+If (PaletteSymbol = "cltabs")					; Tablature serif
+    Send if
+If (PaletteSymbol = "cltabs4")					; Tablature serif 4 lines
+    Send if 4
+
+; ♣=================================== DYNAMICS ========================================
+; shortcuts in this section
+; ,c,ci,d,di,pppppp,ppppp,pppp,ppp,pp,p,mp,mf,f,ff,fff,ffff,fffff,ffffff
+; ,fp,pf,sf,sfz,sff,sffz,sfp,sfpp,rfz,rf,fz,m*,r*,s*,z*,n*
+; ,=pppppp,=ppppp,=pppp,=ppp,=pp,=p,=mp,=mf,=f,=ff,=fff,=ffff,=fffff,=ffffff
+; ,=fp,=pf,=sf,=sfz,=sff,=sffz,=sfp,=sfpp,=rfz,=rf,=fz,=m*,=r*,=s*,=z*,=n*
+; ,cinv,dinv
+; mf<
+
+If PaletteSymbol in pppppp,ppppp,pppp,ppp,pp,p,mp,mf,f,ff,fff,ffff,fffff,ffffff
+,fp,pf,sf,sfz,sff,sffz,sfp,sfpp,rfz,rf,fz,m*,r*,s*,z*,n*,c,d,mf<
+,=pppppp,=ppppp,=pppp,=ppp,=pp,=p,=mp,=mf,=f,=ff,=fff,=ffff,=fffff,=ffffff
+,=fp,=pf,=sf,=sfz,=sff,=sffz,=sfp,=sfpp,=rfz,=rf,=fz,=m*,=r*,=s*,=z*,=n*
+    Return_to_Canvas := "fast"
+
+If PaletteSymbol in pppppp,ppppp,pppp,ppp,pp,=pppppp,=ppppp,=pppp,=ppp,=pp
+    Send pp								; selects pppppp
+If (PaletteSymbol = "ppppp") || (PaletteSymbol = "=ppppp")		; ppppp
+    Pal_DownStroke := 1
+If (PaletteSymbol = "pppp") || (PaletteSymbol = "=pppp")		; pppp
+    Pal_DownStroke := 2
+If (PaletteSymbol = "ppp") || (PaletteSymbol = "=ppp")			; ppp
+    Pal_DownStroke := 3
+If (PaletteSymbol = "pp") || (PaletteSymbol = "=pp")			; pp
+    Pal_DownStroke := 4
+If PaletteSymbol in ff,fff,ffff,fffff,ffffff,=ff,=fff,=ffff,=fffff,=ffffff
+    Send ff								; selects ff
+If (PaletteSymbol = "fff") || (PaletteSymbol = "=fff")			; fff
+    Pal_DownStroke := 1
+If (PaletteSymbol = "ffff") || (PaletteSymbol = "=ffff")		; ffff
+    Pal_DownStroke := 2
+If (PaletteSymbol = "fffff") || (PaletteSymbol = "=fffff")		; fffff
+    Pal_DownStroke := 3
+If (PaletteSymbol = "ffffff") || (PaletteSymbol = "=fffff")		; ffffff
+    Pal_DownStroke := 4
+If (PaletteSymbol = "mf") || (PaletteSymbol = "=mf")			; mf
+    Send mf
+If (PaletteSymbol = "pf") || (PaletteSymbol = "=pf")			; pf
+    Send pf
+If (PaletteSymbol = "fp") || (PaletteSymbol = "=fp")			; fp
+    Send fp
+If (PaletteSymbol = "fz") || (PaletteSymbol = "=fz") {			; fz
+    Send fz
+    Pal_DownStroke := 3
+}
+If (PaletteSymbol = "sf") || (PaletteSymbol = "=sf")			; sf
+    Send sf
+If (PaletteSymbol = "sfp") || (PaletteSymbol = "=sfp")			; sfp
+    Send sfp
+If (PaletteSymbol = "sfpp") || (PaletteSymbol = "=sfpp")		; sfpp
+    Send sfpp
+If (PaletteSymbol = "sff") || (PaletteSymbol = "=sff")			; sff
+    Send sff
+If (PaletteSymbol = "sfz") || (PaletteSymbol = "=sfz")			; sfz
+    Send sfz
+If (PaletteSymbol = "sffz") || (PaletteSymbol = "=sffz")		; sffz
+    Send sffz
+If (PaletteSymbol = "rf") || (PaletteSymbol = "=rf") {			; rf
+    Send rf
+    Pal_DownStroke := 1
+}
+If (PaletteSymbol = "rfz") || (PaletteSymbol = "=rfz")			; rfz
+    Send rfz
+If (PaletteSymbol = "mf<")						; mf cresc pin
+    SendRaw mic + h							; SendRaw causes + to be interpreted literally
+If PaletteSymbol in c,cinv						; crescendo line
+    Send cendo l
+If PaletteSymbol in d,dinv						; diminuendo line
+    Send uendo l
+If PaletteSymbol in p,mp,f,n*,z*,s*,r*,m*,=p,=mp,=f,=n*,=z*,=s*,=r*,=m*
+    Send dy
+If (PaletteSymbol = "p") || (PaletteSymbol = "=p")			; p
+    Pal_DownStroke := 5
+If (PaletteSymbol = "mp") || (PaletteSymbol = "=mp")			; mp
+    Pal_DownStroke := 6
+If (PaletteSymbol = "f") || (PaletteSymbol = "=f")			; f
+    Pal_DownStroke := 8
+If (PaletteSymbol = "n*") || (PaletteSymbol = "=n*")			; n - extended route, search (҂)
+    Pal_UpStroke := 6
+If (PaletteSymbol = "z*") || (PaletteSymbol = "=z*")			; z - idem (҂)
+    Pal_UpStroke := 7
+If (PaletteSymbol = "s*") || (PaletteSymbol = "=s*")			; s - idem (҂)
+    Pal_UpStroke := 8
+If (PaletteSymbol = "r*") || (PaletteSymbol = "=r*")			; r - idem (҂)
+    Pal_UpStroke := 9
+If (PaletteSymbol = "m*") || (PaletteSymbol = "=m*")			; m - idem (҂)
+    Pal_UpStroke := 10
+
+; ♣================================== FINGERING ========================================
+; shortcuts in this section - many of them also for ▼ Guitar
+; NB: fingersubstitution hotkeys fsa and fsb Gosub before ^{F9)
+; ,p0,p1,p2,p3,p4,p5,-a,-c,-i,-m,-p,0,1,2,3,4,5
+; ,s0,s1,s2,s3,s4,s5,s6,th,tp,lt,l1,l2,l3
+
+If PaletteSymbol in 0,p1,p2,p3,p4,p5,-a,-c,-i,-m,-p,0,1,2,3,4,5,s0,s1,s2,s3,s4,s5,s6,th,tp,lt,l1,l2,l3
+    Return_to_Canvas := "fast"
+If (PaletteSymbol = "p0")				; 0 - piano - extended route search (҂)
+    Send g 0
+If (PaletteSymbol = "p1")				; 1 - piano - idem (҂)
+    Send g 1
+If (PaletteSymbol = "p2")				; 2 - piano - idem (҂)
+    Send g 2
+If (PaletteSymbol = "p3")				; 3 - piano - idem (҂)
+    Send g 3
+If (PaletteSymbol = "p4")				; 4 - piano - idem (҂)
+    Send g 4
+If (PaletteSymbol = "p5")				; 5 - piano - idem (҂)
+    Send g 5
+If (PaletteSymbol = "-p")				; p - RH Guitar fingering
+    Send g p
+If (PaletteSymbol = "-i")				; i - RH Guitar fingering
+    Send g i
+If (PaletteSymbol = "-m")				; m - RH Guitar fingering
+    Send ng m
+If (PaletteSymbol = "-a")				; a - RH Guitar fingering
+    Send ing a
+If (PaletteSymbol = "-c")				; c - RH Guitar fingering
+    Send ing c
+If (PaletteSymbol = "0")				; 0 - LH Guitar
+    Send g 0
+If (PaletteSymbol = "1")				; 1 - LH Guitar
+    Send g 1
+If (PaletteSymbol = "2")				; 2 - LH Guitar
+    Send g 2
+If (PaletteSymbol = "3")				; 3 - LH Guitar
+    Send g 3
+If (PaletteSymbol = "4")				; 4 - LH Guitar
+    Send g 4
+If (PaletteSymbol = "5")				; 5 - LH Guitar
+    Send g 5
+If (PaletteSymbol = "th")				; LH guitar fingering T
+    Send g t
+If (PaletteSymbol = "s0")				; String number 0
+    Send r 0
+If (PaletteSymbol = "s1")				; String number 1
+    Send r 1
+If (PaletteSymbol = "s2")				; String number 2
+    Send r 2
+If (PaletteSymbol = "s3")				; String number 3
+    Send r 3
+If (PaletteSymbol = "s4")				; String number 4
+    Send r 4
+If (PaletteSymbol = "s5")				; String number 5
+    Send r 5
+If (PaletteSymbol = "s6")				; String number 6
+    Send r 6
+If (PaletteSymbol = "tp")				; Thumb pos
+    Send b p
+If (PaletteSymbol = "lt")				; Lute thumb fing (RH fingering, thumb)
+    Send g, thu
+If (PaletteSymbol = "l1")				; Lute 1 finger (RH fingering, first finger)
+    Send g, f
+If (PaletteSymbol = "l2")				; Lute 2 finger (RH fingering, second finger)
+    Send g, s
+If (PaletteSymbol = "l3")				; Lute 3 finger (RH fingering, third finger)
+    Send g, thi
+/*
+; PM
+If PaletteSymbol in fsa,fsb				; finger substitution above/below - using Special Characters
+    Gosub, Finger_Substitution				; see before Control + F9
+*/
+
+; ♣============================= FRETBOARD DIAGRAMS ====================================
+; shortcuts in this section
+; ,qa,qam,qa7,qb,qbm,qb7,qc,qcm,qc7,qd,qdm,qd7,qe,qem,qe7,qf,qfm,qf7,qg,qgm,qg7
+
+If PaletteSymbol in qa,qam,qa7,qb,qbm,qb7,qc,qcm,qc7,qd,qdm,qd7,qe,qem,qe7,qf,qfm,qf7,qg,qgm,qg7
+    Return_to_Canvas := "fast"
+If PaletteSymbol in qc,qd,qe,qem,qf,qg,qgm,qa,qam,qb
+    Send fret						; C selected
+If (PaletteSymbol = "qd")				; D
+    Pal_DownStroke := 3
+If (PaletteSymbol = "qe")				; E
+    Pal_DownStroke := 6
+If (PaletteSymbol = "qem")				; Em
+    Pal_DownStroke := 7
+If (PaletteSymbol = "qf")				; F
+    Pal_DownStroke := 9
+If (PaletteSymbol = "qb")				; B	- shorter route search (҂)
+    Pal_UpStroke := 2
+If (PaletteSymbol = "qam")				; Am	- shorter route search (҂)
+    Pal_UpStroke := 4
+If (PaletteSymbol = "qa")				; A	- shorter route search (҂)
+    Pal_UpStroke := 5
+If (PaletteSymbol = "qgm")				; Gm	- shorter route search (҂)
+    Pal_UpStroke := 7
+If (PaletteSymbol = "qg")				; G	- shorter route search (҂)
+    Pal_UpStroke := 8
+If (PaletteSymbol = "qcm")				; Cm
+    Send cm
+If (PaletteSymbol = "qdm")				; Dm
+    Send dm
+If (PaletteSymbol = "qfm")				; Fm
+    Send fm
+If (PaletteSymbol = "qbm")				; Bm
+    Send bm
+If (PaletteSymbol = "qc7")				; C7
+    Send c7
+If (PaletteSymbol = "qd7")				; D7
+    Send d7
+If (PaletteSymbol = "qe7")				; E7
+    Send e7
+If (PaletteSymbol = "qf7")				; F7
+    Send f7
+If (PaletteSymbol = "qg7")				; G7
+    Send g7
+If (PaletteSymbol = "qa7")				; A7
+    Send a7
+If (PaletteSymbol = "qb7")				; B7
+    Send b7
+
+; ♣================================= GRACE NOTES =======================================
+; shortcuts in this section
+; ,ac,acs,ap,aps,g4,g16,g32,g8a,g16a,g32a
+; acs,aps = Acciaccatura/Appogiatura diatonically raised and slurred
+
+If (PaletteSymbol = "ac") || (PaletteSymbol = "acs")	; Acciaccatura
+    Send cia
+If (PaletteSymbol = "ap") || (PaletteSymbol = "aps")	; Appoggtiatura
+    Send gia
+If (PaletteSymbol = "g4")				; Add grace note: quarter
+    Send e: q
+If (PaletteSymbol = "g16")				; Add grace note: 16th
+    Send te: 16
+If (PaletteSymbol = "g32")				; Add grace note: 32nd
+    Send 32nd
+If (PaletteSymbol = "g8a")				; Add grace note: eight after
+    Send e: e
+If (PaletteSymbol = "g16a")				; Add grace note: 16th after
+    Send 6th a
+If (PaletteSymbol = "g32a")				; Add grace note: 32nd after
+    Send 32nd a
+
+; ♣=========================================== HARP ===============================================
+; shortcuts in this section
+; ,hped,htxt
+
+If (PaletteSymbol = "hped")			; Harp pedal diagram
+    Send rp p
+If (PaletteSymbol = "htxt")			; Harp pedal text diagram
+    Send l tex
+
+; ♣========================================= KEYBOARD =============================================
+; shortcuts in this section
+; ,pss,ps*,psr,psc,pcc,pcr
+
+
+If (PaletteSymbol = "pss")			; Pedal (with ped and line)		Ped start stop
+    Send ine)
+If (PaletteSymbol = "ps*")			; Pedal (with ped and asterisk) 	Ped start asterisk
+    Send sk)
+If (PaletteSymbol = "psr")			; Pedal (straight hooks)		Pedline start-release
+    Send ks)
+If (PaletteSymbol = "psc")			; Pedal (angled end hook)		Pedline start-continue
+    Send d end
+If (PaletteSymbol = "pcc")			; Pedal (both hooks angled)		Pedline continue-continue
+    Send gled)
+If (PaletteSymbol = "pcr")			; Pedal (angled start hook)		Pedline continue-release
+    Send d st
+
+; ♣======================================= KEY SIGNATURES =========================================
+; shortcuts in this section
+; ,1#,2#,3#,4#,5#,6#,7#,7b,6b,5b,4b,3b,2b,1b,0#0b,xsig
+; ♭	♯
+
+If (PaletteSymbol = "1#")			; 1#
+    Send g ma
+If (PaletteSymbol = "2#")			; 2#
+    Send d ma
+If (PaletteSymbol = "3#")			; 3#
+    Send a ma
+If (PaletteSymbol = "4#")			; 4#
+    Send e ma
+If (PaletteSymbol = "5#")			; 5#
+    Send b ma
+If (PaletteSymbol = "6#")			; 6#
+    Send f♯ ma
+If (PaletteSymbol = "7#")			; 7#
+    Send c♯ ma
+If (PaletteSymbol = "7b")			; 7b
+    Send c♭ ma
+If (PaletteSymbol = "6b")			; 6b
+    Send g♭ ma
+If (PaletteSymbol = "5b")			; 5b
+    Send d♭ ma
+If (PaletteSymbol = "4b")			; 4b
+    Send a♭ ma
+If (PaletteSymbol = "3b")			; 3b
+    Send e♭ ma
+If (PaletteSymbol = "2b")			; 2b
+    Send b♭ ma
+If (PaletteSymbol = "1b")			; 1b
+    Send f ma
+If (PaletteSymbol = "0#0b")			; 0# 0b
+    Send c ma
+If (PaletteSymbol = "xsig")			; Xsig - Atonal
+    Send /at	
+
+; ♣=========================================== LAYOUT =============================================
+; shortcuts in this section
+; ,sb,pb,xb,ssd,ssu,ssf,stc,ivf,ihf,itf,i1mbs,kmoss
+
+If PaletteSymbol in ssd,ssu,ssf
+{
+    If (Range_Selection = 0) {
+        MsgBox, 4144, Create Staff Spacer, No range selected!
+        Return
+    }
+}
+If (PaletteSymbol = "sb")			; system break
+    Send m b
+If (PaletteSymbol = "pb")			; page break
+    Send e br
+If (PaletteSymbol = "xb")			; section break
+    Send n br
+If (PaletteSymbol = "ssd")			; staff spacer down - height immediately adjustable
+    Send r d
+If (PaletteSymbol = "ssu")			; staff spacer up - idem
+    Send r u
+If (PaletteSymbol = "ssf")			; staff spacer fixed down - idem
+    Send r fix
+If (PaletteSymbol = "stc")			; staff type change - immediate access to properties
+    Send e ch
+If (PaletteSymbol = "kmoss")			; keep measures on the same sysem
+    Send kee
+
+/*
+If (PaletteSymbol = "i1mbs")			; insert one measure before selection
+    Send sel
+; alternative Frame creation without the benefit of immediate access to 'Properties'
+If PaletteSymbol in ivf,ihf,itf			; gosub before sending Control F9
+    Gosub, Insert_Frame
+If (PaletteSymbol = "ivf")			; insert vertical frame
+    Send t v
+If (PaletteSymbol = "ihf")			; insert horizontal frame
+    Send tal f
+If (PaletteSymbol = "itf")			; insert text frame
+    Send xt f
+*/
+
+
+; ♣========================================= LINES ================================================
+; shortcut in this section
+; ,l
+; all lines but 'line' exist also in other palettes
+
+; NB: nal -> note anchored line
+
+; ottava lines					in Pitch
+; Ambitus					in Pitch
+; Staff/System text lines			in Text
+; Pedal lines					in Keyboard
+; Trill, Upprall, Downprall, Prallprall lines	in Ornaments
+; Sawtooth Vibrato/tremolo			in Repeats & Jumps
+; Let ring, Palm mute				in Guitar
+; Text line is also guitar barré line		in Guitar
+
+If (PaletteSymbol = "l") {			; Line - ▼Clefs ▼Barlines and ▼Lines appear but it is in ▼Lines
+    Send lines					; extended route search (҂)
+    Pal_Downstroke := 29			; with unique route to skip other palette(s)
+}						; textline - immediate access to text properties
+
+; Staff text line				in Text Palette
+; System text line				in Text Palette
+
+If (PaletteSymbol = "tl") || (PaletteSymbol = "bl")	; textline - immediate access to text properties
+    Send barr						; is also guitar barré line
+If (PaletteSymbol = "lr")				; Let ring	
+    Send let
+If (PaletteSymbol = "gv")			; Guitar vibrato
+    Send r v
+If (PaletteSymbol = "gvw")			; Guitar vibrato wide
+    Send to w
+If (PaletteSymbol = "pm")			; Palm mute
+    Send pal
+If (PaletteSymbol = "vsaw")			; Vibrato sawtooth
+    Send to s
+If (PaletteSymbol = "tsaw")			; Tremolo sawtooth wide
+    Send lo s
+
+; ♣================================= NOTEHEADS =========================================
+; shortcuts in this section
+; ,*n,*x,*+,*xc,*xx,*tu,*td,*/,*\,*d,*do,*c,*cl,*la,*ab,*//,*ld,sol,la,fa,mi,do,re,ti,*hx,*hxh
+
+If (PaletteSymbol = "*x")			; Cross
+    Send cross
+If (PaletteSymbol = "*hx")			; Heavy cross
+    Send y c
+If (PaletteSymbol = "*hxh")			; Heavy cross hat
+    Send s h
+If (PaletteSymbol = "*+")			; Plus - extended route - search (҂)
+    Send plus
+If (PaletteSymbol = "*xc")			; XCircle
+    Send xc
+If (PaletteSymbol = "*xx")			; With X
+    Send h x
+If (PaletteSymbol = "*tu")			; Triangle up
+    Send le u
+If (PaletteSymbol = "*td")			; Triangle down
+    Send le d
+If (PaletteSymbol = "*/")			; Slashed (forwards)
+    Send d (f
+If (PaletteSymbol = "*\")			; Slashed (backwards)
+    Send d (b
+If (PaletteSymbol = "*//") {			; Slash - extended route - search (҂)
+    Send sla
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "*d")			; Diamond
+    Send diam
+If (PaletteSymbol = "*do")			; Diamond (old)
+    Send nd (
+If (PaletteSymbol = "*c")			; Circled
+    Send cled
+If (PaletteSymbol = "*cl")			; Circled large
+    Send ed l
+If (PaletteSymbol = "*la")			; Large arrow
+    Send rge a
+If (PaletteSymbol = "*ab")			; Alt. brevis
+    Send lt.
+If (PaletteSymbol = "*ld")			; Large diamond
+    Send e dia
+If PaletteSymbol in *n,la,mi,do,re,ti
+    Send teh					; Noteheads - Normal (*N)
+If (PaletteSymbol = "la")			; La
+    Pal_DownStroke := 18
+If (PaletteSymbol = "mi")			; Mi
+    Pal_DownStroke := 20
+If (PaletteSymbol = "do")			; Do
+    Pal_DownStroke := 21
+If (PaletteSymbol = "re")			; Re
+    Pal_DownStroke := 22
+If (PaletteSymbol = "ti")			; Ti
+    Pal_DownStroke := 23
+If (PaletteSymbol = "sol")			; Sol
+    Send sol
+If (PaletteSymbol = "fa")			; Fa  - extended route search (҂)
+    Send fa
+
+; PM Add parentheses to element exists in Accidentals
+
+; ♣================================== ORNAMENTS ========================================
+; shortcuts in this section
+; ,-t,-turn,+t,+turn,turn,tr,im,trmb,prm,upr,mor,mup,upm,pdn,dnm,pru,lpr,sl,slide,shtr,+t/,trl,upl,dpl,ppl
+; all articulations but 'turn' can be reached by sending an unique description to the palette search field
+
+; Trill line, Upprall line,Downprall line en Prall prall line exist also in the LINES Palette
+
+If (PaletteSymbol = "+t") {			; Turn
+    Send turn
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "-t")			; Inverted turn
+    Send d turn
+If (PaletteSymbol = "+t/")			; Turn with slash
+    Send h sl
+If (PaletteSymbol = "tr")			; Trill
+    Send trill
+If (PaletteSymbol = "shtr")			; Short trill
+    Send t tril
+If (PaletteSymbol = "mor")			; Mordent
+    Send mord
+If (PaletteSymbol = "trmb")			; Tremblement
+    Send remb
+If (PaletteSymbol = "prm")			; Prall mordent
+    Send all m
+If (PaletteSymbol = "upr")			; Up prall
+    Send up p
+If (PaletteSymbol = "mup")			; Mordent with upper prefix
+    Send t w
+If (PaletteSymbol = "upm")			; Up mordent
+    Send up m
+If (PaletteSymbol = "dnm")			; Down mordent
+    Send wn m
+If (PaletteSymbol = "pdn")			; Prall down
+    Send rall d
+If (PaletteSymbol = "pup")			; Prall up
+    Send l u
+If (PaletteSymbol = "lpr")			; Line prall
+    Send ne p
+If (PaletteSymbol = "sl") || (PaletteSymbol = "slide")	; Slide
+    Send sli
+If (PaletteSymbol = "trl")			; Trill line
+    Send ill l
+If (PaletteSymbol = "upl")			; Upprall line
+    Send ppr
+If (PaletteSymbol = "dpl")			; Downprall line
+    Send np
+If (PaletteSymbol = "ppl")			; Prallprall line
+    Send lp
+
+; ♣========================================= PITCH ================================================
+; shortcuts in this section
+; 8va,8vb,15ma,15mb,22ma,22mb,am
+; after sending 'pitc' 8 va alta is selected
+
+If PaletteSymbol in 8va,8vb,15ma,15mb,22ma,22mb,amb
+    Send pitc
+
+; If (PaletteSymbol = "8va")		; 8va alta
+; first field already selected
+
+If (PaletteSymbol = "8vb")		; 8va bassa
+    Pal_DownStroke := 1
+If (PaletteSymbol = "15ma")		; 15 ma alta
+    Pal_DownStroke := 2
+If (PaletteSymbol = "15mb")		; 15 ma bassa
+    Pal_DownStroke := 3
+If (PaletteSymbol = "22ma")		; 22 ma alta
+    Pal_DownStroke := 4
+If (PaletteSymbol = "22mb")		; 22 ma bassa
+    Pal_DownStroke := 5
+If (PaletteSymbol = "amb")		; Ambitus
+    Pal_DownStroke := 6
+
+; ♣=============================== REPEATS and JUMPS ===================================
+; shortcuts in this section
+; ,rlm,r2m,r4m,seg,segv,coda,codav,fine
+; ,tct,tcs,dc,dcaf,dcac,dcadc,dacoda,da2coda,ds,dss,dsac,dsaf,dssac,dssadc,dssaf,1v,2v,2vo,3v,vibsaw,tremsaw
+; the repeat signs exist also in the barlines palette
+; 'vibrato sawtooth' and 'tremolo sawtooth wide' exist also in the lines palette
+
+If (PaletteSymbol = "rlm")		; Repeat last measure
+    Send t m
+If (PaletteSymbol = "r2m")		; Repeat last two measures
+    Send st t
+If (PaletteSymbol = "r4m")		; Repeat last four measures
+    Send st fo
+If (PaletteSymbol = "seg")		; Segno
+    Send segno
+If (PaletteSymbol = "segv")		; Segno variation §
+    Send o v
+If (PaletteSymbol = "coda")		; Coda Φ
+    Send coda
+If (PaletteSymbol = "codav")		; Coda variation
+    Send d co
+If (PaletteSymbol = "fine")		; Fine
+    Send fine
+If (PaletteSymbol = "tct")		; To Coda text
+    Send o co
+If (PaletteSymbol = "tcs")		; To Coda (symbol) ʘ
+    Send da (
+If (PaletteSymbol = "dc")		; Da Capo
+    Send da c
+If (PaletteSymbol = "dcaf")		; Da Capo al Fine
+    Send po al f
+If (PaletteSymbol = "dcac")		; Da Capo al Coda
+    Send po al c
+If (PaletteSymbol = "dsac")		; D.S. al Coda
+    Send d.s. al c
+If (PaletteSymbol = "dsaf")		; D.S. al Fine
+    Send s. al f
+If (PaletteSymbol = "ds") {		; D.S.
+    Send d.s.
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "dcadc")		; Da Capo al Double Coda
+    Send po al d
+If (PaletteSymbol = "dss")		; Dal Segno Segno
+    Send no s
+If (PaletteSymbol = "dssac")		; D.S.S. al Coda - Dal Segno Segno al Coda
+    Send no al c
+If (PaletteSymbol = "dssadc")		; D.S.S. al Double Coda - Dal Segno Segno al Double Coda
+    Send o segno al d
+If (PaletteSymbol = "dssaf")		; D.S.S. al Fine - Dal Segno Segno al Fine
+    Send no al f
+If (PaletteSymbol = "dacoda")		; Da Coda
+    Send da co
+If (PaletteSymbol = "da2coda")		; Da Double Coda
+    Send da d
+If (PaletteSymbol = "1v")		; Prima volta
+    Send ma v
+If (PaletteSymbol = "2v")		; Seconda volta
+    Send da v
+If (PaletteSymbol = "2vo")		; Seconda volta, open
+    Send a,
+If (PaletteSymbol = "3v")		; Terza volta
+    Send erz
+If (PaletteSymbol = "vibsaw")		; Vibrato sawtooth
+    Send to s
+If (PaletteSymbol = "tremsaw")		; Tremolo sawtooth wide
+    Send h w
+
+; ♣==================================== TEXT ===========================================
+; shortcuts in this section
+; ,syt,stt,sytl,sttl,ext,rm,lg,arc,dt,dis,od,har,jt,nm,mar,cl,sult,sulp,s/a,t/b,t/l/b/b,ic,mn,trem,mu,vib,piz,op
+
+If (PaletteSymbol = "syt")		; system text
+    Send m te
+If (PaletteSymbol = "stt")		; staff text
+    Send f te
+If (PaletteSymbol = "sytl")		; system text line
+    Send m text l
+If (PaletteSymbol = "sttl")		; staff text line
+    Send f text l
+If (PaletteSymbol = "ext")		; expression text
+    Send exp
+If (PaletteSymbol = "rm")		; rehearsal mark
+    Send al m
+If (PaletteSymbol = "lg")		; legato
+    Send ega
+If (PaletteSymbol = "arc")		; arco
+    Send arco
+If (PaletteSymbol = "dt")		; détaché
+    Send dé
+If (PaletteSymbol = "dis")		; distortion
+    Send dis
+If (PaletteSymbol = "od")		; overdrive
+    Send dr
+If (PaletteSymbol = "har")		; harmonics
+    Send nics
+If (PaletteSymbol = "jt")		; jazz tone
+    Send ja
+If (PaletteSymbol = "nm")		; normal
+    Send orm
+If (PaletteSymbol = "mar")		; martelé
+    Send lé
+If (PaletteSymbol = "cl")		; col legno
+    Send col
+If (PaletteSymbol = "sult")		; sul tasto
+    Send l ta
+If (PaletteSymbol = "sulp")		; sul ponticello
+    Send l po
+If (PaletteSymbol = "s/a")		; S/A Soprano/Alto
+    Send o/
+If (PaletteSymbol = "t/b")		; T/B Tenor/Bass
+    Send r/b
+If (PaletteSymbol = "t/l")		; T/L Tenor/Lead
+    Send r/b
+If (PaletteSymbol = "b/b")		; B/B Bari/Bass
+    Send i/
+If (PaletteSymbol = "ic")		; instrument change NB: ci = cresc. line invisible
+    Send inst
+If (PaletteSymbol = "mn")		; measure number - functionality unclear
+    Send re n
+If (PaletteSymbol = "trem") {		; tremolo
+    Send emo
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "mu") {		; mute
+    Send mute
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "vib") {		; vibrato
+    Send ibr
+    Pal_DownStroke := 4
+}
+If (PaletteSymbol = "piz") {		; pizzicato
+    Send piz
+    Pal_DownStroke := 2
+}
+If (PaletteSymbol = "op") {		; open
+    Send open
+    Pal_DownStroke := 4
+}
+
+; ♣==================================== TEMPO ==========================================
+; shortcuts in this section
+; ,m2,m2.,m4,m4.,m8,m8.,gra,grav,grave,lar,larg,largo,len,lent,lento,ada,adag,adagi,adagio
+; ,and,anda,andan,andante,mod,mode,moder,moderato,alto,a>,allegre,allegretto
+; ,alro,a<,allegro,viv,viva,vivace,pre,pres,prest,presto,issimo,prestissimo
+; ,mm4=4.,mmc=c.,mm4.=4,mmc.=c,mm2=4,mmm=c,mm4=2,mmc=m,mm8=8,mmq=q,mm4=4,mmc=c,mm8.=4,mmq.=c
+; ,accel,allar,ritar,swing,strai,calan,lenta,moren,preci,smorz,soste,strin
+; ,minim,minim.,crotchet,crotchet.,quaver,quaver.
+
+If PaletteSymbol in m2,m2.,m4,m4.,m8,m8.,gra,grav,grave,lar,larg,largo,len,lent,lento,ada,adag,adagi,adagio
+,and,anda,andan,andante,mod,mode,moder,moderato,alto,a>,allegre,allegretto
+,alro,a<,allegro,viv,viva,vivace,pre,pres,prest,presto,issimo,prestissimo
+,mm4=4.,mmc=c.,mm4.=4,mmc.=c,mm2=4,mmm=c,mm4=2,mmc=m,mm8=8,mmq=q,mm4=4,mmc=c,mm8.=4,mmq.=c
+,accel,allar,ritar,swing,strai,calan,lenta,moren,preci,smorz,soste,strin
+,minim,minim.,crotchet,crotchet.,quaver,quaver.
+    Return_to_Canvas := "mouse_position"		; search (Ħ)
+
+If PaletteSymbol in m2,minim				; Half note =80 BPM
+    Send f note = 8				
+If PaletteSymbol in m4,crotchet				; Quarter note = 80 BPM
+    Send r note = 8
+If PaletteSymbol in m8,quaver				; Eighth note = 80 BPM
+    Send f note = 8
+If PaletteSymbol in m2.,minim.				; Dotted half note = 80 BPM
+    Send ed h
+If PaletteSymbol in m4.,crotchet.			; Dotted quarter note = 80 BPM
+    Send ted q
+If PaletteSymbol in m8.,quaver.				; Dotted eighth note = 80 BPM
+    Send ted e
+If PaletteSymbol in gra,grav,grave			; Grave 35 BPM
+    Send rav
+If PaletteSymbol in lar,larg,largo			; Largo 50 BPM
+    Send go
+If PaletteSymbol in len,lent,lento			; Lento 52 BPM
+    Send ento
+If PaletteSymbol in ada,adag,adagi,adagio		; Adagio 71 BPM
+    Send agi
+If PaletteSymbol in and,anda,andan,andante		; Andante 92 BPM
+    Send nte
+If PaletteSymbol in mod,mode,moder,moderato		; Moderato 114 BPM
+    Send mode
+If PaletteSymbol in alto,a<,allegre,allegretto		; Allegretto 116 BPM
+    Send gre
+If PaletteSymbol in alro,a>,allegro			; Allegro 144 BPM
+    Send gro
+If PaletteSymbol in viv,viva,vivace			; Vivace 172 BPM
+    Send viv
+If PaletteSymbol in pre,pres,prest,presto		; Presto 187 BPM
+    Send esto
+If PaletteSymbol in issimo,prestissimo			; Prestissimo 200 BPM
+    Send esti
+If (PaletteSymbol = "accel")				; Accelerando
+    Send el.
+If (PaletteSymbol = "allar")				; Allargando
+    Send rg.
+If (PaletteSymbol = "ritar")				; Ritardando
+    Send it.
+If (PaletteSymbol = "swing")				; Swing
+    Send swi
+If (PaletteSymbol = "strai")				; Straight
+    Send stra
+If (PaletteSymbol = "calan")				; Calando
+    Send cala
+If (PaletteSymbol = "lenta")				; Lentando
+    Send ntan
+If (PaletteSymbol = "moren")				; Morendo
+    Send more
+If (PaletteSymbol = "preci")				; Precipitando
+    Send itan
+If (PaletteSymbol = "smorz")				; Smorzando
+    Send smo
+If (PaletteSymbol = "soste")				; Sostenuto
+    Send sos
+If (PaletteSymbol = "strin")				; Stringendo
+    Send ng.
+If PaletteSymbol in mm4=4.,mmc=c.			; Metric modulation: quarter note = dotted quarter note
+    Send = d
+If PaletteSymbol in mm4.=4,mmc.=c			; Metric modulation: dotted quarter note = quarter note
+    Send d quarter note = q
+If PaletteSymbol in mm2=4,mmm=c				; Metric modulation: half note = quarter note
+    Send f note = q
+If PaletteSymbol in mm4=2,mmc=m				; Metric modulation: quarter note = half note
+    Send = h
+If PaletteSymbol in mm8=8,mmq=q				; Metric modulation: eighth note = eighth note
+    Send = e
+If PaletteSymbol in mm4=4,mmc=c				; Metric modulation: quarter note = quarter note
+{
+    Send r note = q
+    Pal_DownStroke := 1
+}
+If PaletteSymbol in mm8.=4,mmq.=c			; Metric modulation: dotted eighth note = quarter note
+    Send h note = q
+
+; ♣============================== TIME SIGNATURES ======================================
+; shortcuts in this section
+; ,2/4,3/4,4/4,5/4,6/4,3/8,4/8,5/8,6/8,7/8,9/8,12/8,c4/4,2/2,c2/2,3/2,4/2,b2/2,c9/8
+; the repeat command - WIN +/ - can't be used for time signatures
+
+If PaletteSymbol in 2/4,3/4,4/4,5/4,6/4,7/4,3/8,4/8,5/8,6/8,7/8,9/8,12/8,c4/4,2/2,c2/2,3/2,4/2,b2/2,c9/8
+    Return_to_Canvas := "mouse_position"		; search (Ħ)
+If (PaletteSymbol = "2/4")		; 2/4
+    Send 2/4
+If (PaletteSymbol = "3/4")		; 3/4
+    Send 3/4
+If (PaletteSymbol = "4/4")		; 4/4
+    Send 4/4
+If (PaletteSymbol = "5/4")		; 5/4
+    Send 5/4
+If (PaletteSymbol = "6/4")		; 6/4
+    Send 6/4
+If (PaletteSymbol = "3/8")		; 3/8
+    Send 3/8
+If (PaletteSymbol = "4/8")		; 4/8
+    Send 4/8
+If (PaletteSymbol = "5/8")		; 5/8
+    Send 5/8
+If (PaletteSymbol = "6/8")		; 6/8
+    Send 6/8
+If (PaletteSymbol = "7/8")		; 7/8
+    Send 7/8
+If (PaletteSymbol = "9/8")		; 9/8
+    Send 9/8
+If (PaletteSymbol = "12/8")		; 12/8
+    Send 12/8
+If (PaletteSymbol = "c4/4")		; Common time C 4/4
+    Send mmo
+If (PaletteSymbol = "c2/2")		; ₵ Cut time 2/2
+    Send cut ti
+If (PaletteSymbol = "2/2")		; 2/2
+    Send 2/2
+If (PaletteSymbol = "3/2")		; 3/2
+    Send 3/2
+If (PaletteSymbol = "4/2")		; 4/2
+    Send 4/2
+If (PaletteSymbol = "b2/2")		; cut time (Bach)
+    Send t time (
+If (PaletteSymbol = "c9/8")		; cut triple time (9/8)
+    Send ut tr
+
+; ♣=================================== TREMOLOS ========================================
+; shortcuts in this section
+; ,8,q,16,sq,32,dsq,64,hdsq,br,buzz,-8-,-q-,-16-,-sq-,-32-,-dsq-,-64-,-hdsq-
+
+If (PaletteSymbol = "8") || (PaletteSymbol = "q")		; 1/8 - Quaver - eighth through stem
+    Send hth t
+If (PaletteSymbol = "16") || (PaletteSymbol = "sq")		; 1/16 - SemiQ - 16th through stem
+    Send 6th t
+If (PaletteSymbol = "32") || (PaletteSymbol = "dsq")		; 1/32 - DemiSQ - 32nd through stem
+    Send nd t
+If (PaletteSymbol = "64") || (PaletteSymbol = "hdsq")		; 1/64 - HemiDSQ - 64th through stem
+    Send 4th t
+If (PaletteSymbol = "br") || (PaletteSymbol = "buzz")		; Buzz roll
+    Send uzz
+If (PaletteSymbol = "-8-") || (PaletteSymbol = "-q-")		; 1/8 - Quaver - eighth between notes
+    Send hth b
+If (PaletteSymbol = "-16-") || (PaletteSymbol = "-sq-")		; 1/16 - SemiQ - 16th between notes
+    Send 6th b
+If (PaletteSymbol = "-32-") || (PaletteSymbol = "-dsq-")	; 1/32 - DemiSQ - 32nd between notes
+    Send nd b
+If (PaletteSymbol = "-64-") || (PaletteSymbol = "-hdsq-")	; 1/64 - HemiDSQ - 64th between notes
+    Send 4th b
+
+; ♣======================================= TO PALETTE CELL = ==========================================
+; NB: extended route for some symbols  (҂)
+
+Sleep, Sleep_500					; time to open the palette(s)	(☼) and (☼) below
+Send {Tab}							; arrives in highest palette
+Sleep, Sleep_25
+If (PaletteSymbol = "l")				; 'line'
+    Send {up}						; from ▼Clefs (skip > ▼Barlines) to ▼Lines
+If (PaletteSymbol = "*//")				; notehead Slash
+    Send {down}						; from ▼Ornaments  > ▼Noteheads
+If (PaletteSymbol = "fa")				; notehead Fa
+    Send {down}						; from ▼Articulations  > ▼Noteheads
+If (PaletteSymbol = "*+")				; notehead Plus
+    Send {down}						; to skip ▼Accidentals
+If PaletteSymbol in [[,[l				; in brackets: bracket cq line
+    Send {down}						; from ▼Articulations  > ▼Brackets
+If PaletteSymbol in p0,p1,p2,p3,p4,p5			; from ▼Guitar > ▼Fingering
+    Send {down}
+If PaletteSymbol in qa,qam,qb,qg,qgm			; shorter route in ▼Fretboard diagrams
+{
+    Send {end}
+    Sleep, Sleep_25
+    Send {up %Pal_UpStroke%}
+    If PaletteSymbol in qg,qgm
+        Sleep, Sleep_25
+    Goto, Create_Pal_Symbol				; see below 🎵
+}
+If PaletteSymbol in n*,z*,s*,r*,m*,=n*,=z*,=s*,=r*,=m*	; from ▼Dynamics > ▼Lines
+{
+    Send {down}						; shortest route, avoiding many downstrokes
+    Sleep, Sleep_100
+    Send {right}					; ▼Lines active
+    Sleep, Sleep_25
+    Send {up %Pal_UpStroke%}				; back in ▼Dynamics
+    Goto, Create_Pal_Symbol				; see below 🎵
+}
+Sleep, Sleep_50
+Send {right}						; in standard route enter palette
+Sleep, Sleep_50
+Send {down}						; to first palette cell
+Sleep, Sleep_50
+Send {down %Pal_Downstroke%}				; to destination cell
+
+; ♣============================ CREATE SYMBOL - FIND CELL COORDINATES =============================
+
+Create_Pal_Symbol:					; HERE 🎵	🎶	🎶	(☼)
+Sleep, Sleep_50
+Send {space}						; creates symbol
+Sleep, Sleep_50
+PixelSearch, X, Y, Side_Bar_X1, Side_Bar_Y1, Side_Bar_X2, Side_Bar_Y2, Color_Selected_PalCell, , Fast RGB
+Repeat_Glyph_X := X					; to deliver the coordinates to the hotkey WIN + /
+Repeat_Glyph_Y := Y					; so you can add the same glyph again by an automated click >
+							; > not needing Z+A again
+
+; ♣============================= SPECIAL RETURN TO CANVAS FOR SOME SYMBOLS ========================
+; the general method aims at returning to a voice 1 element, note or rest, in single and range selection
+; for some symbols this is too demanding (tempo/timesigs) or unpractical (grace notes, pedal lines)
+; also almost all repeats and jumps return best to canvas using Alt + Right (subroutine Loop_Voice_1_forward:)
+
+If (Return_to_Canvas = "mouse_position")		; for tempo and timesigs (Ħ)
+{
+    Click,  %StartX%, %StartY%
+    Return_to_Canvas := ""
+    Return
+}
+If PaletteSymbol in hped,htxt				; harp pedal (text) diagram
+{
+    Sleep, Sleep_100
+    Gosub, VoiceSearch
+    Click,  %VS_X%, %VS_Y%				; select diagram
+    Sleep, Sleep_300
+    ToolTip, Edit diagram.`nPress Z when ready, VS_X, VS_Y+40, 4	; (*change*?)
+    Send {F2}						; edit
+    Sleep, Sleep_100
+    Send {F2}						; edit
+    Keywait, z, d
+    ToolTip, , , , 4					; close tooltip (4)
+    Send ^!+{right}					; to note
+    Sleep, Sleep_100
+    Gosub, VoiceSearch
+    Click,  %VS_X%, %VS_Y%				; selects note
+    Return
+}
+If PaletteSymbol in acs,aps				; grace note diatonically raised and slurred
+{
+    If (Range_Selection = 1)
+        MsgBox, 4144, Raise and Slur Grace Note, In a range selection`nonly one grace note`ncan be treated this way.
+    Send +!{up}						; raise diatonically
+    Send s						; slurred
+    Send {Esc}
+    Send {right}
+}
+If PaletteSymbol in ac,acs,ap,aps,g4,g16,g32,g8a,g16a,g32a	; facilitates adding more grace notes (≈)
+    Return
+If PaletteSymbol in pss,ps*,psr,psc,pcc,pcr		 	; facilitates adding more pedal lines
+{
+    Send {f6}						; to score title tab
+    Send {esc}						; focus on Canvas
+    Sleep, Sleep_50
+    Send {right}
+    Sleep, Sleep_50
+    Send {left}						; to last pedalled note/rest
+    Sleep, Sleep_50
+    Gosub, VoiceSearch
+    Click,  %VS_X%, %VS_Y%
+    Return
+}
+If PaletteSymbol in rlm,r2m,r4m,seg,segv,coda,codav,fine
+,tct,tcs,dc,dcaf,dcac,dcadc,dacoda,da2coda,ds,dss,dsac,dsaf,dssac,dssadc,dssaf
+{							; works only in range selection
+    Gosub, Loop_Voice_1_forward				; the voltas (1v,2v,2vo,3v) are treated differently
+    Gosub, VoiceSearch
+    Click,  %VS_X%, %VS_Y%
+    Return
+}
+If PaletteSymbol in vibsaw,tremsaw			; vibrato/tremolo sawtooth
+{
+    Send {f6}						; to score title tab
+    Sleep, Sleep_30
+    Send {esc}
+    Sleep, Sleep_30
+    Send {right}
+    Sleep, Sleep_30
+    Send {left}
+    Sleep, Sleep_30
+    Gosub, VoiceSearch
+    Click,  %VS_X%, %VS_Y%
+    Return
+}
+
+; ♣=============================== SPECIAL TREATMENT OF SOME SYMBOLS (1) ==========================
+; subroutines with return to Canvas and exit, skipping the general back to canvas method below
+; used for L,BL,TL,STC,SSD,SSU,SSF,CINV,DINV,1:||:2
+; the next hotkeys are intercepted before the Palette search and have their own subroutines below:
+; RBL (reset short barlines), IVF,IHF,ITF,I1MBS (insert frames/measure) and FSA,FSB (finger substitution)
+; idem for the Feathered_Beams hotkeys: =FBD,=FBS,=FBA,=FBF,=RFB
+; also NAL (note anchored line) got its special treatment (see above - without using a Palette)
+
+If PaletteSymbol in l,bl,tl,sttl,sytl
+    Gosub, Text_Line_Text_Props
+If (PaletteSymbol = "stc")				; staff type change already created
+    Gosub, Staff_Type_Change
+If PaletteSymbol in ssd,ssu,ssf				; all staff spacers already created
+    Gosub, Staff_Spacers
+If PaletteSymbol in cinv,dinv				; dynamic lines already created
+    Gosub, Make_Dynamic_Lines_Invisible
+If (PaletteSymbol = "1:||:2")				; barlines end/start repeat already created
+    Gosub, Prima_Seconda_Volta				; to create these symbols
+
+; ♣=========================== BACK TO CANVAS FOR SELECTED NOTE OR RANGE ==========================
+
+If (Return_to_Canvas = "fast")
+    Goto, Finish_RTC					; see below 🎵
+Send +{f6}						; to score title tab
+Sleep, Sleep_30
+Send {esc}
+Sleep, Sleep_30
+If (Range_Selection = 1) {				; to get only one element selected for the VoiceSearch
+    Send {right}
+    Sleep, Sleep_50
+}
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Voice1.png
+If (ErrorLevel = 1) {
+    Send ^!+{right}
+    Sleep, Sleep_100
+    ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Barline.png
+    If (ErrorLevel = 0) {
+        Send ^!+{left}
+        Sleep, Sleep_50
+    }
+}
+Finish_RTC:						; HERE 🎵	🎶	🎶  (₲)
+If (Return_to_Canvas = "fast") {
+    Send ^!+{right}
+    Sleep, Sleep_150
+}
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Sleep, Sleep_200
+Return_to_Canvas := ""
+Return
+
+; ♣=============================== SPECIAL TREATMENT OF SOME SYMBOLS (2) ==========================
+
+Insert_Frame:						; IVF,IHF,ITF,I1MBS
+If (PaletteSymbol = "i1mbs") {				; insert one measure before selection
+    Send {ins}
+    Sleep, Sleep_100
+    Send {left}
+    Sleep, Sleep_30
+    Send {right}
+    Sleep, Sleep_30
+    Goto, Finish_Frame					; see below 🎵
+}
+Send !a
+Sleep, Sleep_500
+Send {down 4}
+Sleep, Sleep_100
+Send {right}
+Sleep, Sleep_100
+; If (PaletteSymbol = "ihf")
+If (PaletteSymbol = "ivf")				; insert vertical frame
+    Send {down}
+If (PaletteSymbol = "itf")				; insert text frame
+    Send {down 2}
+Sleep, Sleep_100
+Send {space}						; action - if not ivf/itf inserts horizontal frame
+Sleep, Sleep_100
+If (PaletteSymbol = "itf")
+    Sleep, Sleep_200
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV1, , Fast RGB
+If (PaletteSymbol = "itf") {
+    VS_X := VS_X + 4					; (*change*?)
+    VS_Y := VS_Y + 4					; (*change*?)
+}
+Click,  %VS_X%, %VS_Y%
+Sleep, Sleep_200
+If (PaletteSymbol = "ihf")				; for horizontal frame
+    ToolTip, Press Left/Right to set the width.`nPress Z when ready, VS_X, VS_Y-80, 4	; (*change*?)
+If (PaletteSymbol = "ivf")				; for vertical frame
+    ToolTip, Press Up/Down to set the height.`nPress Z when ready, VS_X, VS_Y-80, 4	; (*change*?)
+If (PaletteSymbol = "itf") {				; for text frame
+    Sleep, Sleep_100
+    ToolTip, Press F1 when ready, VS_X, VS_Y-40, 4	; (*change*?)							; (*change*?)
+    Send {click}					; enters text frame
+    Sleep, Sleep_200
+    Send Text
+    Sleep, Sleep_200
+}
+If (PaletteSymbol = "ihf") || (PaletteSymbol = "ivf")
+    Keywait, z, d
+If (PaletteSymbol = "itf")
+    Keywait, f1, d
+ToolTip, , , , 4					; close tooltip (4)
+Send {esc}
+Sleep, Sleep_50
+Finish_Frame:						; HERE 🎵	🎶	🎶
+Gosub, Loop_Voice_1_forward
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Exit
+
+Text_Line_Text_Props:					; L,BL,TL,STTL,SYTL
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV1, , Fast RGB
+MsgBox, 4145, Text Lines, To get immediate access to properties:`nSelect the line.`nAvoid edit mode with Escape.`nPress Z when ready.
+IfMsgBox, Cancel
+    Exit
+Send {esc}
+Sleep, Sleep_50
+Send {left}
+ToolTip, Select the text line.`nIf the line handles appear press Escape.`nPress Z when ready., VS_X, VS_Y-80, 4			; (*change*?)
+Keywait, z, d
+ToolTip, , , , 4					; close tooltip (4)
+Side_Bar_Tab := "prop"
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{F6 3}
+Sleep, Sleep_50
+Send {tab 2}						; enter tab  ▼ Text line
+Sleep, Sleep_50
+Send {down 2}
+Sleep, Sleep_50
+Send {space}						; activates 'Text'
+Sleep, Sleep_50
+Send {down}						; to 'Beginning text' or reset field
+Sleep, Sleep_50
+If PaletteSymbol not in l
+    Send {down}						; to 'Beginning text'
+ToolTip, Navigate with Left/Right.`nPress Escape + L/R to skip an input field.`nSpace to toggle a switch.`nPress F1 when ready., CSA_X1, CSA_Y1, 4		; (*change*?)
+Keywait, f1, d
+ToolTip, , , , 4					; close tooltip (4)
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV1, , Fast RGB
+Click,  %VS_X%, %VS_Y%
+Sleep, Sleep_200
+Send {esc}
+Sleep, Sleep_50
+Send ^!+{right 2}
+Sleep, Sleep_100
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Exit
+
+Staff_Type_Change:					; STC
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV1, , Fast RGB
+LBC_X1 := VS_X-50					; search area layout break color - staff type change
+LBC_Y1 := VS_Y-100
+LBC_X2 := VS_X+100
+LBC_Y2 := VS_Y
+PixelSearch, STC_X, STC_Y, LBC_X1, LBC_Y1, LBC_X2, LBC_Y2, Color_LBC, , Fast RGB
+Click,  %STC_X%, %STC_Y%
+Sleep, Sleep_200
+Side_Bar_Tab := "prop"
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{F6 3}
+Sleep, Sleep_50
+Send {tab 2}						; enter tab  ▼ Staff type changes
+Sleep, Sleep_50
+Send {end}
+ToolTip, Navigate with Left/Right.`nPress Escape + L/R to skip a numeric field.`nSpace to toggle a switch.`nPress Z when ready., CSA_X1, CSA_Y1, 4		; (*change*?)
+Keywait, z, d
+ToolTip, , , , 4					; close tooltip (4)
+Gosub, VoiceSearch					; Staff type change icon selected - Color voice 1
+Click,  %VS_X%, %VS_Y%
+Sleep, Sleep_200
+Send ^!+{right 2}
+Sleep, Sleep_100
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Exit
+
+Staff_Spacers:						; SSD,SSU,SSF
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+ToolTip, Use up/down to adjust height.`nPress Z when ready, VS_X, VS_Y - 80, 4		; (*change*?)
+Keywait, z, d
+ToolTip, , , , 4					; close tooltip (4)
+Send {esc}						; escape from edit mode
+Sleep, Sleep_50
+Gosub, Loop_Voice_1_forward				; to skip clef, keysig, timesig (if any) and symbols
+Gosub, VoiceSearch
+Click,  %VS_X%, %VS_Y%
+Exit
+
+Prima_Seconda_Volta:					; 1:||:2
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%					; barline right end OR left start repeat sign selected
+Sleep, Sleep_300					; needed for mousemove and click + buffer
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Barline_Right_End_Repeat_Sign.png
+If (ErrorLevel = 0) {
+    Send ^!+{right}					; from right end repeat to left start repeat
+    Sleep, Sleep_50
+    Send ^!+{right}					; from left start repeat - landed on rest duration measure?
+}
+If (ErrorLevel = 1) {
+    Send ^!+{right}					; from left start repeat - landed on rest duration measure?
+    Sleep, Sleep_50
+}
+Sleep, Sleep_200
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Rest_Duration_Measure.png
+If (ErrorLevel = 1) {
+    Send ^+{right}					; select the measure
+    Sleep, Sleep_100
+}
+If (ErrorLevel = 0) {					; if actually landed on a rest duration measure
+    Send ^+{right}					; selects two measures
+    Sleep, Sleep_100
+    Send ^+{left}					; deselect right measure
+    Sleep, Sleep_100
+}
+Send ^{f9}
+Sleep, Sleep_200
+Send a,							; seconda volta, open
+Sleep, Sleep_500
+Send {Tab}						; arrives in highest palette
+Sleep, Sleep_25
+Send {right}
+Sleep, Sleep_25
+Send {down}
+Sleep, Sleep_25
+Send {space}						; creates symbol seconda volta, open
+Sleep, Sleep_50
+Send {esc}						; focus on canvas
+Sleep, Sleep_25
+Send ^{left}						; from selected measure to last element in previous measure
+Sleep, Sleep_100					; give image time to appear
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Rest_Duration_Measure.png
+If (ErrorLevel = 1)
+    Send ^+{left}					; one or two measures selected ?
+If (ErrorLevel = 0) {					; if it actually landed on a rest duration measure
+    Send ^+{left}	
+    Sleep, Sleep_100
+    Send ^+{right}					; deselect left measure
+}
+Sleep, Sleep_100
+Send ^{f9}
+Sleep, Sleep_200
+Send ma v						; prima volta
+Sleep, Sleep_500
+Send {Tab}						; arrives in highest palette
+Sleep, Sleep_25
+Send {right}
+Sleep, Sleep_25
+Send {down}
+Sleep, Sleep_25
+Send {space}						; creates symbol
+Sleep, Sleep_50
+Send {esc}						; focus on canvas
+Sleep, Sleep_25
+Send {left}
+Sleep, Sleep_25
+Send {right}
+Sleep, Sleep_25
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Exit
+
+Make_Dynamic_Lines_Invisible:				; CINV,DINV - toggle switch
+MsgBox, 4145, Make Dynamic Lines Invisible, Select the line and press Z.`nAvoid edit mode with Escape.
+IfMsgBox, Cancel
+    Exit
+Gosub, VoiceSearch
+Tooltip, Press Z when ready, VS_X, VS_Y-30, 4	; position (*change*?)
+Keywait, z, d
+ToolTip, , , , 4					; close tooltip (4)
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Hairpin.png
+If (ErrorLevel = 1) {
+    MsgBox, 4144, Make Dynamic Lines Invisible, No dynamic line selected.`nThe macro will exit.
+    Exit
+}
+Side_Bar_Tab := "prop"
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{F6 3}
+Sleep, Sleep_50
+Send {tab 2}						; enter tab  ▼ Crescendo cq ▼ Diminuendo
+Sleep, Sleep_50
+Send {down}
+Sleep, Sleep_50
+Send {space}						; 'Style' activated
+Sleep, Sleep_50
+Send {down 2}
+Sleep, Sleep_50
+Send {space}						; 'Show line' off
+Sleep, Sleep_50
+Send {esc}						; focus on canvas
+Sleep, Sleep_50
+Send ^!+{right}						; from dynamic line to next in-staff element
+Sleep, Sleep_100
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Exit
+
+Reset_short_barlines:					; RBL - Reset barline span to default (for tick and short barlines)
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Barline.png
+If (ErrorLevel = 1) {
+    MsgBox, 4144, Reset barline span, Select a short or 'tick' barline.
+    Exit
+}
+If (ErrorLevel = 0) {
+    Side_Bar_Tab := "prop"
+    Gosub, F7_F8_F9_Tab_Title_Check
+    Gosub, Nav_to_Home
+    Send +{F6 3}
+    Sleep, Sleep_50
+    Send {tab 2}					; enter tab  ▼ Barline
+    Sleep, Sleep_50
+    Send {end}
+    Sleep, Sleep_50
+    Send {up 4}						; selects Spanpresets: Default
+    Sleep, Sleep_50
+    Send {space}
+    Sleep, Sleep_50
+    Send {F6}						; focus on canvas
+    Sleep, Sleep_50
+    Send {esc}
+    Sleep, Sleep_50
+    Send ^!+{right}					; from barline to next in-staff element
+    Sleep, Sleep_100
+}
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Exit
+
+Feathered_Beams:					; ₮
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Note_Pitch.png
+If (ErrorLevel = 1) {					; no note selected
+    MsgBox, 4144, Create/Reset Feathered Beam, Select a beamed 16th or 32nd.
+    Goto, Finish_Feathered_Beam				; see below  🎵
+}
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Eighth.png
+If (ErrorLevel = 0) {						; an eighth or dotted eighth selected
+    MsgBox, 4144, Create/Reset Feathered Beam, Select a beamed 16th or 32nd.
+    Goto, Finish_Feathered_Beam				; see below  🎵
+}
+Side_Bar_Tab := "prop"
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{F6 3}
+Sleep, Sleep_50
+Send {tab 2}						; enter tab  ▼ Note
+Sleep, Sleep_50
+Send {down 3}
+Sleep, Sleep_50
+Send {space}						; 'Beam' activated
+Sleep, Sleep_50
+PixelSearch, , , Beam_Type_Auto_X1, Beam_Type_Auto_Y1, Beam_Type_Auto_X2, Beam_Type_Auto_Y2, Color_Beam_Type_Auto, 2, Fast RGB
+If (ErrorLevel = 0)					; beaming is auto
+    Send {down %Prop_DownStroke%}
+If (ErrorLevel = 1) {					; beaming is not auto
+    Prop_DownStroke := Prop_DownStroke+1
+    Send {down %Prop_DownStroke%}
+}
+Sleep, Sleep_50
+Send {space}						; perform action: FF ac/de-celerating or reset FB
+Sleep, Sleep_50
+Finish_Feathered_Beam:					; HERE 🎵	🎶	🎶
+Prop_DownStroke := 0
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Exit
+
+Finger_Substitution:					; rather long sleeptimes are needed
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Note_Pitch.png
+If (ErrorLevel = 1) {
+    MsgBox, 4144, Create Finger Substitution Symbols, Select a note! The macro will exit.
+    Exit
+}
+Send ^t							; create staff text
+Sleep, Sleep_200
+Send +{f2}						; window Special Characters
+WinWait, Special Characters
+WinMove, Special Characters, , 336, 175, 496, 502	; numbers found by Window Spy (*change*?)
+Send {right}						; from Common symbols to Musical Symbols
+Sleep, Sleep_50
+Send {tab}						; selects 'Accordion'
+Sleep, Sleep_50
+Loop, 3							; to 'Fingering'
+{
+    Send f
+    Sleep, Sleep_500					; very sticky subwindow
+}
+Send {tab}						; enters 'Fingering'
+Sleep, Sleep_50
+If (PaletteSymbol = "fsa")
+    Send {down 17}
+If (PaletteSymbol = "fsb")
+    Send {down 18}
+Sleep, Sleep_50
+Send {enter}
+Sleep, Sleep_50
+WinClose, Special Characters
+WinWaitClose, Special Characters
+Send {esc}						; from text edit mode
+Sleep, Sleep_50
+Side_Bar_Tab := "prop"
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{F6 3}
+Sleep, Sleep_50
+Send {tab 2}						; enter tab  ▼ Text
+Sleep, Sleep_50
+Send {down 9}
+Sleep, Sleep_100
+Send {up 10}						; Text size 20 pt
+Sleep, Sleep_100
+Send {f6}						; focus on canvas
+Sleep, Sleep_50
+Send {esc}						; symbol selected
+Sleep, Sleep_100
+If (PaletteSymbol = "fsa") {				; positioning symbol finger substion above
+    Send {left 4}
+    Sleep, Sleep_50
+    Send ^{down 2}
+    Sleep, Sleep_100
+    Send {down 2}
+    Sleep, Sleep_50
+}
+If (PaletteSymbol = "fsb") {				; positioning symbol finger substion below
+    Send x
+    Sleep, Sleep_50
+    Send {left 4}
+    Sleep, Sleep_50
+    Send {up 3}
+    Sleep, Sleep_100
+}
+Send ^!+{right}						; from symbol to next in-staff element
+Sleep, Sleep_100
+Gosub, VoiceSearch
+Click, %VS_X%, %VS_Y%
+Exit
+
+Info_Special_Symbols:
+MsgBox, 4096, Info Special Symbols,
+(
+Info Special Symbols
+
+# Extra functionality using 'Properties'
+
+Staff type change #		STC
+Line #				L
+Text line #			TL
+Barré line #			BL
+Staff text line #			STTL
+System text line #			SYTL
+Staff spacer down, set height	SSD
+Staff spacer up, set height		SSU
+Staff spacer fixed, set height	SSF
+Cresc. line invisible #		CINV
+Dim. line invisible #		DINV
+Reset (short) barlines #		RBL
+Insert and set vertical frame		IVF
+Insert and set horizontal frame	IHF
+Insert and set text frame		ITF
+Insert one measure		I1MBS
+before selection
+
+Feathered beams
+Decelerate/slower #		=FBD	=FBS
+Accelerate/faster #			=FBA	=FBF
+Reset FB's			=RFB
+
+Repeated Palette use
+┌─1─┐:‖:┌─2──			1:||:2
+
+Window Special Characters
+Finger substituton above		FSA
+Finger substituton below		FSB
+
+Note anchored line		NAL
+)
+Return
+
+; ♣================================== END OF PALETTES MACRO =======================================
+
+; ♣================================== SEMI AUTOMATIC NAVIGATION ===================================
+; use tab, arrowkeys, home, end. Enter a category by pressing Space or Enter
+; the I-, O- and P- key reflect the position of F7, F8 and F9 on the keyboard
+
+~[ & home::						; to 'Home'
+Gosub, Nav_to_Home
+Return
+
+~[ & i::						; activate sidepanel instruments - to highest instrument
+Side_Bar_Tab := "instr"
+Goto, Pal_Prop_Instr_Check				; see below 🎵
+~[ & o::						; activate sidepanel palettes - to highest palette
+Side_Bar_Tab := "prop"
+Goto, Pal_Prop_Instr_Check				; see below 🎵
+~[ & p::						; activate sidepanel properties - to highest category ▼ General or ▼ Show
+Side_Bar_Tab := "pal"
+Goto, Pal_Prop_Instr_Check				; see below 🎵
+Pal_Prop_Instr_Check:					; HERE 🎵	🎶	🎶
+Gosub, F7_F8_F9_Tab_Title_Check
+Gosub, Nav_to_Home
+Send +{f6 3}						; to active tab title
+Sleep, Sleep_30
+Send {tab}
+If (Side_Bar_Tab = "pal") || (Side_Bar_Tab = "instr")
+    Send {tab}						; to highest ► palette c.q. instrument
+; Side_Bar_Tab_Old := Side_Bar_Tab
+Return
+
+; ♣=========================================  SELECTION ===========================================
+; NB: Alt + RightButton trigers File Menu
+; NB: Control + RightButton has no effect for Clefs (2x up > Delete does not delete) and TimeSigs (2x up > Edit element)
+; NB: Control + RightButton needs an extra check for Staff and System texts
+
+~^RButton::						; range > all similar	
+CM := "Range_All_Similar"				; CM = contextual menu
+Goto, ContextMenu					; see below 🎵
+~CapsLock & RButton::					; range > same subtype
+CM := "Range_Same_Subtype"
+Goto, ContextMenu					; see below 🎵
+~+RButton::						; staff > all similar
+CM := "Staff_All_Similar"
+Goto, ContextMenu					; see below 🎵
+~^+RButton::						; staff > same subtype
+CM := "Staff_Same_Subtype"
+Goto, ContextMenu					; see below 🎵
+~!+RButton::						; range > same voice
+CM := "Range_Same_Voice"
+Goto, ContextMenu					; see below 🎵
+
+ContextMenu:						; HERE 🎵	🎶	🎶
+If CM in Staff_All_Similar,Staff_Same_Subtype,Range_Same_Voice
+{
+    Keywait, Shift, d
+    Keywait, Shift, u
+}
+If CM in Range_All_Similar,Range_Same_Subtype
+    Keywait, RButton, up
+Gosub, Full_Max_Check					; position statusbar verified and changed if needed
+ImageSearch, , , SB_X1, SB_Y1, Width_Nothing_Selected, SB_Y2, *40 Nothing_Selected.png
+If (ErrorLevel = 0) {
+    MsgBox, 4144, Selection, Nothing selected!
+    Return
+}
+Gosub, Range_Selection_Check
+If (Range_Selection = 0) && (CM = "Range_All_Similar") {
+    MsgBox, 4144, Selection  -  Control + Right button, The command is 'Select all similar in this range'.`nMake a range selection.
+    Return
+}
+If (Range_Selection = 0) && (CM = "Range_Same_Subtype") {
+    MsgBox, 4144, Selection  -  CapsLock + Right button, The command is 'Select the same subtype in this range'.`nMake a range selection.
+    Return
+}
+If (Range_Selection = 0) && (CM = "Range_Same_Voice") {
+    MsgBox, 4144, Selection  -  Alt + Shift + Right button, The command is 'Select the same voice in this range'.`nMake a range selection.
+    Return
+}
+Send {Click right}
+Sleep, Sleep_200
+Send {down 5}						; to 'Select'
+Sleep, Sleep_100
+Send {space}						; opens context submenu
+Sleep, Sleep_100
+If (CM = "Range_All_Similar") {				; range is selected - if note is rightclicked:..
+    Send {space}					; ..selects noteheads in range
+    Sleep, Sleep_100
+    Return
+}
+If (Range_Selection = 0) && (CM = "Staff_All_Similar") {
+    Send {down}
+    Sleep, Sleep_50
+    Send {space}
+    Sleep, Sleep_100
+    Return
+}
+Send {up}
+Sleep, Sleep_100
+Send {space}						; opens 'More' 
+Sleep, Sleep_200
+WinGetTitle, Title, A
+If (Title = "Select Notes") && !(CM = "Range_Same_Voice") {
+    MsgBox, 4144, Selection, This command does not work for notes.
+    Send {esc}
+    Return
+}
+If (Title = "Select") && (CM = "Range_Same_Voice") {
+    MsgBox, 4144, Selection, This command only works for notes.
+    Send {esc}
+    Return
+}
+SetTitleMatchMode, 1
+If (CM = "Range_Same_Voice") {
+    WinWait, Select Notes, , 0.3			; waits max 300 ms
+    If (ErrorLevel = 1) {				; if no response in this time
+        MsgBox, 4144, Selection, The window 'Select Notes' has timed out.
+        Return
+    }
+    Send {tab 9}					; to 'In selection'
+    Sleep, Sleep_30
+    Send {space}
+    Sleep, Sleep_100
+    Send {tab}						; to 'Same voice'
+    Send {space}
+    Sleep, Sleep_100
+    Send {enter}
+    Return
+}
+WinWait, Select, , 0.3					; waits max 300 ms
+If (ErrorLevel = 1) {					; if no response in this time
+    MsgBox, 4144, Selection, The window 'Select' has timed out.
+    Return
+}
+Send {tab 2}						; to 'Same subtype'
+Sleep, Sleep_30
+If (CM = "Staff_Same_Subtype") || (CM = "Range_Same_Subtype") {
+    Send {space}
+    Sleep, Sleep_100
+}
+Send {tab 2}						; to 'Same staff'
+Sleep, Sleep_30
+If (CM = "Staff_All_Similar") || (CM = "Staff_Same_Subtype") {
+    Send {space}
+    Sleep, Sleep_100
+}
+If (CM = "Range_Same_Subtype") {
+    Send {tab}						; to 'In selection'
+    Sleep, Sleep_30
+    Send {space}
+    Sleep, Sleep_100
+}
+Send {enter}
+Return
+
+; ♣====================================== UTILITIES ===============================================
+; MatchListUtilities is in auto-exec section at the top of this file
+
+~z & u::
+X := ""
+Y := ""
+Image_Text := ""
+InputBox, Util, Utilities, , , W_IB, H_IB, IB_X, IB_Y, , , Help = Questionmark	;  (*change*?) 
+if ErrorLevel								; when Cancel is pressed
+    Return
+If Util not in %MatchListUtilities%
+{
+    MsgBox, 4144, Utilities, No valid command.
+    Return
+}
+If util in 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+    Goto, Skip_InputBox_Util					; see below 🎵
+If (Util = "?") || (Util = "Help = Questionmark") {
+MsgBox, 4096, Utilities   -   Z + U,
+(
+Image checks - enter number
+
+Def_State_4_Dots #		1
+Nav_to_Home			2
+Palettes_selected			3
+Palettes_unselected		4
+Properties_selected		5
+Properties_unselected		6
+Instruments_selected		7
+Instruments_unselected		8
+
+# ToolBar Note Input TBNI
+   4 measurements
+
+Click 'Instruments'			9
+Click 'Properties'			10
+Click 'Palettes'			11
+MU4 Window Data		12
+Check color Beam Type Auto	13
+Check layout TBNI			14
+Check layout StatusBar		15
+)
+}
+InputBox, Util, Utilities, , , W_IB, H_IB, IB_X, IB_Y, , , Enter input		;  (*change*?) 
+If ErrorLevel								; when Cancel is pressed
+    Return
+If (Util = "Enter input") {
+    MsgBox, 4144, Utilities, No valid command.
+    Return
+}
+Skip_InputBox_Util:							; HERE 🎵	🎶	🎶
+If (Util = 1) {
+    Image_Text := "Def_State_4_Dots.png"
+    MsgBox, 4144, Find Coordinates 4 Dots,
+(
+NB: the toolbar 'Playback controls' must be invisible.
+
+The ToolBar Note Input TBNI can appear in 4 positions.
+TBNI Horizontal high
+TBNI Horizontal low
+TBNI Vertical left
+TBNI Vertical right
+Determine the coordinates for each position.
+)
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Def_State_4_Dots.png
+}
+If (Util = 2) {
+    Image_Text := "Def_State_Nav_to_Home.png"
+    MsgBox, 4144, Find Home, Press F6 until Home is selected.`nIt appears in a black rectangle.`nPress Z when ready.
+    Tooltip, Press Z when ready., 0, 0, 4
+    Keywait, z, d
+    Tooltip, , , , 4							; close tooltip (4)
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Def_State_Nav_to_Home.png
+}
+If (Util = 3) {
+    Image_Text := "Palettes_selected.png"
+    MsgBox, 4144, Find Palettes selected, To avoid finding 'Add Palettes'`nthe macro will switch on the search field.
+    Send ^{f9}
+    Sleep, Sleep_400
+    Click,  A_ScreenWidth/2, 0
+    Sleep, Sleep_200
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Palettes_selected.png
+}
+If (Util = 4) {
+    Image_Text := "Palettes_unselected.png"
+    MsgBox, 4144, Find Palettes unselected, To avoid finding 'Add Palettes'`nthe macro will switch on the search field.
+    Send ^{f9}
+    Sleep, Sleep_400
+    Click,  A_ScreenWidth/2, 0
+    Sleep, Sleep_200
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Palettes_unselected.png
+}
+If (Util = 5) {
+    Image_Text := "Properties_selected.png"
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Properties_selected.png
+}
+If (Util = 6) {
+    Image_Text := "Properties_unselected.png"
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Properties_unselected.png
+}
+If (Util = 7) {
+    Image_Text := "Instruments_selected.png"
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Instruments_selected.png
+}
+If (Util = 8) {
+    Image_Text := "Instruments_unselected.png"
+    ImageSearch, X, Y, 0, 0, A_ScreenWidth, A_ScreenHeight, *40 Instruments_unselected.png
+}
+If util in 1,2,3,4,5,6,7,8
+{
+    If (ErrorLevel = 0) {
+        MouseMove, X, Y
+        MsgBox, 4144, Find Coordinates, The image is %Image_Text%.`nThe coordinates of its upper left corner are %X%, %Y%.
+    }
+    If (ErrorLevel = 1)
+        MsgBox, 4144, Find Coordinates,
+(
+The image %Image_Text% is not found.
+Possible causes: it is not present on the screen.
+Or it is present but not in the chosen mode:
+Selected vs. Unselected.
+
+If the image is still not recognized:
+Try increasing the number e.g. *80 instead of *40.
+A higher number allows more shades of variation
+in the recognition of the image.
+)
+    If (ErrorLevel = 2)
+        MsgBox, 4112, Find Coordinates, Could not conduct the search`nof %Image_Text%.`nCheck name and location of the .png file.
+}
+If (Util = 9)
+    Side_Bar_Tab := "instr"
+If (Util = 10)
+    Side_Bar_Tab := "prop"
+If (Util = 11)
+    Side_Bar_Tab := "pal"
+If Util in 9,10,11
+    Gosub, F7_F8_F9_Tab_Title_Check
+If (Util = 12) {
+    WinGetPos, MU4_X, MU4_Y, MU4_Width, MU4_Height, ahk_exe MuseScore4.exe
+    MsgBox, 4160, MuseScore 4 Window Data, The upper left corner of the window is %MU4_X%, %MU4_Y%.`nThe width is %MU4_Width%.`nThe height is %MU4_Height%.
+}
+If (Util = 13) {
+    CoordMode, Pixel, Screen
+    PixelSearch, , , Beam_Type_Auto_X1, Beam_Type_Auto_Y1, Beam_Type_Auto_X2, Beam_Type_Auto_Y2, Color_Beam_Type_Auto, 2, Fast RGB
+    If (ErrorLevel = 0)						; beaming is auto
+        MsgBox, 4144, Beam type: Auto, The color was found.`nThe beaming is Auto.
+    If (ErrorLevel = 1)						; beaming is not auto
+        MsgBox, 4144, Beam type: Auto, The color was not found.`nSelect an automatically beamed 16th`nand try again.
+}
+If (Util = 14)
+    Gosub, Defined_State_Check
+If (Util = 15) {
+    ImageSearch, X, Y, SB_X1, SB_Y1, SB_X2, SB_Y2, *40 Def_State_Zoom_Tools.png
+    If (ErrorLevel = 0) {
+    MsgBox, 4144, Layout Check, The StatusBar is in its Defined State.
+    Click,  %X%, %Y%
+    }
+    If (ErrorLevel = 1)
+        MsgBox, 4112, Layout Check, The StatusBar is not in its Defined State.
+}
+Util := ""
+Return
+
+; ♣======================================= SUBROUTINES ============================================
+
+; the first symbol of the toolbar Note input TBNI contains 6 dots
+; the image however contains 4 dots so it can be used in the horizontal and vertical variants of the TBNI
+; each of the 4 possible positions is checked. if your layout includes the TBNI you get the fastest >
+; macro execution by putting that layout section before the others. NB: check the Goto
+
+Defined_State_Check:
+CoordMode, Pixel, Screen
+Gosub, Full_Max_Check
+If (TBNI_Pos = "hh")
+    TBNI_Text := "Horizontal High"
+If (TBNI_Pos = "hl")
+    TBNI_Text := "Horizontal Low"
+If (TBNI_Pos = "vl")
+    TBNI_Text := "Vertical Left"
+If (TBNI_Pos = "vr")
+    TBNI_Text := "Vertical Right"
+ImageSearch, X, Y, 4_Dots_HH_X1, 4_Dots_HH_Y1, 4_Dots_HH_X2, 4_Dots_HH_Y2, *40 Def_State_4_Dots.png
+If (ErrorLevel = 0) && (TBNI_Pos = "hh") {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is in the Defined State.`n%TBNI_Text%.
+    Return
+}
+If (ErrorLevel = 0) && ((TBNI_Pos = "hl") || (TBNI_Pos = "vl") || (TBNI_Pos = "vr"))  {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is not in the Defined State.`nPosition the TBNI %TBNI_Text%.`n`nThe macro will exit.
+    Exit
+}
+If (ErrorLevel = 0) && (TBNI_Pos = "no")
+    Goto, Suppress_TBNI					; see below 🎵
+If (ErrorLevel = 1)
+    Goto, Hor_Low
+Hor_Low:						; horizontal low section
+ImageSearch, X, Y, 4_Dots_HL_X1, 4_Dots_HL_Y1, 4_Dots_HL_X2, 4_Dots_HL_Y2, *40 Def_State_4_Dots.png
+If (ErrorLevel = 0) && (TBNI_Pos = "hl") {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is in the Defined State.`n%TBNI_Text%.
+    Return
+}
+If (ErrorLevel = 0) && ((TBNI_Pos = "hh") || (TBNI_Pos = "vl") || (TBNI_Pos = "vr")) {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is not in the Defined State.`nPosition the TBNI %TBNI_Text%.`n`nThe macro will exit.
+    Exit
+}
+If (ErrorLevel = 0) && (TBNI_Pos = "no")
+    Goto, Suppress_TBNI					; see below 🎵
+If (ErrorLevel = 1)
+    Goto, Ver_Left
+Ver_Left:						; vertical left section
+ImageSearch, X, Y, 4_Dots_VL_X1, 4_Dots_VL_Y1, 4_Dots_VL_X2, 4_Dots_VL_Y2, *40 Def_State_4_Dots.png
+If (ErrorLevel = 0) && (TBNI_Pos = "vl") {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is in the Defined State.`n%TBNI_Text%.
+    Return
+}
+If (ErrorLevel = 0) && ((TBNI_Pos = "hh") || (TBNI_Pos = "hl") || (TBNI_Pos = "vr")) {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is not in the Defined State.`nPosition the TBNI %TBNI_Text%.`n`nThe macro will exit.
+    Exit
+}
+If (ErrorLevel = 0) && (TBNI_Pos = "no")
+    Goto, Suppress_TBNI					; see below 🎵
+If (ErrorLevel = 1)
+    Goto, Ver_Right
+Ver_Right:						; vertical right section
+ImageSearch, X, Y, 4_Dots_VR_X1, 4_Dots_VR_Y1, 4_Dots_VR_X2, 4_Dots_VR_Y2, *40 Def_State_4_Dots.png
+If (ErrorLevel = 0) && (TBNI_Pos = "vr") {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is in the Defined State.`n%TBNI_Text%.
+    Return
+}
+If (ErrorLevel = 0) && ((TBNI_Pos = "hh") || (TBNI_Pos = "hl") || (TBNI_Pos = "vl")) {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is not in the Defined State.`nPosition the TBNI %TBNI_Text%.`n`nThe macro will exit.
+    Exit
+}
+If (ErrorLevel = 1) && ((TBNI_Pos = "hh") || (TBNI_Pos = "hl") || (TBNI_Pos = "vl") || (TBNI_Pos = "vr")) {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The TBNI is not visible.`nPosition the TBNI %TBNI_Text%.`n`nThe macro will exit.
+    Exit
+}
+If (ErrorLevel = 0) && (TBNI_Pos = "no")
+    Goto, Suppress_TBNI					; see below 🎵
+If (ErrorLevel = 1) && (TBNI_Pos = "no") {
+    MsgBox, 4144, Layout Check ToolBar Note Input, The screen is in the Defined State.`nThe TBNI is not visible.
+    Return
+}
+Suppress_TBNI:						; HERE 🎵	🎶	🎶
+Send !v
+Sleep, Sleep_300
+Send t
+Sleep, Sleep_100
+Send {down}
+Send {space}						; remove unwanted TBNI
+Sleep, Sleep_200
+Return
+
+Get_MU4_Window_Data:
+WinGetPos, MU4_X, MU4_Y, MU4_Width, MU4_Height, ahk_exe MuseScore4.exe
+If !(MU4_X = 0) || !(MU4_Y = 0) {
+    Send #{up}				; corrects for wrong XY origin of ULC; Defined State needs MU4_X = 0 and MU4_Y = 0
+    Sleep, Sleep_200
+    WinGetPos, MU4_X, MU4_Y, MU4_Width, MU4_Height, ahk_exe MuseScore4.exe
+}
+Return
+
+; your choice for Full or Max Screen is of course reflected in the coordinates of the StatusBar
+; as set in the auto-execute section at the beginning of the script 
+
+Full_Max_Check:						; MU4 windows position verified and changed if needed
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 Def_State_Zoom_Tools.png
+If (ErrorLevel = 1) && (Screen = "full")
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth,  A_ScreenHeight
+If (ErrorLevel = 1) && (Screen = "max")
+    WinMove, ahk_exe MuseScore4.exe, , 0, 0 , A_ScreenWidth, MU4_Max_Window_Height
+Sleep, Sleep_300
+WinActivate, ahk_exe MuseScore4.exe
+Return
+
+; Def_State_Nav_to_Home.png: notice the presence of the black borderline, recognized when selected
+Nav_to_Home:
+CoordMode, Pixel, Screen
+Loop, 5							; image recognition within this small area takes 30 ms
+{
+   ImageSearch, , , Nav_Home_X1, Nav_Home_Y1, Nav_Home_X2, Nav_Home_Y2, *40 Def_State_Nav_to_Home.png
+    If (ErrorLevel = 1) {
+        Send +{F6}
+        Sleep, Sleep_80
+        Continue
+    }
+    If (ErrorLevel = 0)
+        Break
+}
+Side_Bar_Tab_Old := Side_Bar_Tab
+Return
+
+F7_F8_F9_Tab_Title_Check:
+If (Side_Bar_Tab = Side_Bar_Tab_Old)			; no need for the check if side panel is still the same
+    Return
+CoordMode, Pixel, Screen
+If (Side_Bar_Tab = "pal") {
+    ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Palettes_selected.png
+    If (ErrorLevel = 0)
+        Goto, Finish_SideBar				; see below 🎵
+    If (ErrorLevel = 1) {
+        ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Palettes_unselected.png
+        If (ErrorLevel = 1) {
+            Send {F9}
+            Sleep, Sleep_300
+            Goto, Finish_SideBar			; see below 🎵
+        }
+    }
+}
+If (Side_Bar_Tab = "prop") {
+    ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Properties_selected.png
+    If (ErrorLevel = 0)
+        Goto, Finish_SideBar				; see below 🎵
+    If (ErrorLevel = 1) {
+        ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Properties_unselected.png
+        If (ErrorLevel = 1) {
+            Send {F8}
+            Sleep, Sleep_300
+            Goto, Finish_SideBar			; see below 🎵
+        }
+    }
+}
+If (Side_Bar_Tab = "instr") {
+    ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Instruments_selected.png
+    If (ErrorLevel = 0)
+        Goto, Finish_SideBar				; see below 🎵
+    If (ErrorLevel = 1)
+        ImageSearch, F789_X, F789_Y, F7_F8_F9_Tab_Title_X1, F7_F8_F9_Tab_Title_Y1, F7_F8_F9_Tab_Title_X2, F7_F8_F9_Tab_Title_Y2, *40 Instruments_unselected.png
+        If (ErrorLevel = 1) {
+            Send {F7}
+            Sleep, Sleep_300				;  ⇎⇎
+            Goto, Finish_SideBar			; see below 🎵
+        }
+}
+Finish_SideBar:						; HERE 🎵	🎶	🎶
+F789_X := F789_X + X_Offset_F7_F8_F9_Tab_Title
+F789_Y := F789_Y + Y_Offset_F7_F8_F9_Tab_Title
+Click, %F789_X%, %F789_Y%				; activates SideBar Tab
+Sleep, Sleep_200
+Side_Bar_Tab_Old := Side_Bar_Tab
+Return
+
+VoiceSearch:
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV1, , Fast RGB
+if ErrorLevel
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV2, , Fast RGB
+if ErrorLevel
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV3, , Fast RGB
+if ErrorLevel
+PixelSearch, VS_X, VS_Y, CSA_X1, CSA_Y1, CSA_X2, CSA_Y2, ColorV4, , Fast RGB
+VS_Y := VS_Y+3	; to prevent clicking upper third in a chord
+Return
+
+Loop_Voice_1_forward:
+Loop_forward := 1
+Loop_backward := 0
+Goto, Start_VoiceSearch_Loop
+Loop_Voice_1_backward:
+Loop_backward := 1
+Loop_forward := 0
+Goto, Start_VoiceSearch_Loop
+Start_VoiceSearch_Loop:
+Loop, 5
+{
+    ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Voice1.png
+    If (ErrorLevel = 0)
+        Break
+    If (ErrorLevel = 1) {
+        If (Loop_forward = 1)				; to next voice 1 element
+            Send !{right}				; (skip articulations, text, dynamics etc.)
+        If (Loop_backward = 1)
+            Send !{left}				; to previous voice 1 element, note or rest
+        Sleep, Sleep_150				; time for statusbar image
+        Continue
+    }
+}
+Return
+
+Range_Selection_Check:
+ImageSearch, , , SB_X1, SB_Y1, SB_X2, SB_Y2, *40 StatusBar_Range_Selection.png
+If (ErrorLevel = 0)
+    Range_Selection := 1
+If (ErrorLevel = 1)
+    Range_Selection := 0
+Return
+
+Nothing_Selected:
+ImageSearch, , , SB_X1, SB_Y1, Width_Nothing_Selected, SB_Y2, *40 Nothing_Selected.png
+If (ErrorLevel = 0)
+    Nothing_Selected := 1
+If (ErrorLevel = 1)
+    Nothing_Selected := 0
+Return
+
+; ♣========================================  END OF MACROS ========================================

@@ -1,0 +1,141 @@
+#NoEnv  				; recommended for performance and compatibility with future AutoHotkey releases.
+#Warn  					; enable warnings to assist with detecting common errors.
+SendMode Input  			; recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%		; ensures a consistent starting directory
+#SingleInstance force			; replaces script (reloads).
+#Persistent				; to make it run indefinitely
+#IfWinActive ahk_exe C:\Program Files\MuseScore 4\bin\MuseScore4.exe	; (*) enables Hotkeys when MuseScore4 Window is Active
+
+; (*) Check the path C:\Program Files\MuseScore 4\bin\MuseScore4.exe. 
+; if different: replace it with your location of MuseScore4.exe
+; NB: AutoHotkey does not read the lines after semicolon and space. they don't influence speed of execution.
+
+; AutoHotkey version 1.1.36.02	download on https://github.com/AutoHotkey/AutoHotkey/releases
+; latest version v1.1.36.02   NOT v2.00 or v2.0.2 !!  Click 'Assets'
+; download AutoHotkey_1.1.36.02_setup.exe - 3.19 MB - Dec 7, 2022
+
+
+CoordMode, ToolTip, Screen
+ToolTip , MU4 Master  [ + H, A_ScreenWidth/2+230, 0, 1
+
+Sleep_30 := 30
+Sleep_50 := 50
+Sleep_100 := 100
+Sleep_200 := 200
+Sleep_300 := 300
+Sleep_1000 := 1000
+
+; ♣==================================== (RE)LOAD and EXIT APP =====================================
+
+~[ & ]::					; reload master
+MsgBox, 4132, Reload Master MU4        [  +  ], Are you sure you want to reload?
+IfMsgBox, Yes
+    Reload
+Return
+
+~] & [::					; exit master
+MsgBox, 4132, Exit Master MU4        ]  +  [, Are you sure you want to exit?
+IfMsgBox, Yes
+    ExitApp
+Return
+
+~[ & s::
+MsgBox, 4132, [ + S - Start Apply Palette Symbols, Do you want to launch the macro group?
+IfMsgBox, Yes
+    Run, Apply_Palette_Symbols_MU4.ahk, , UseErrorLevel
+if (ErrorLevel = "Error")
+    MsgBox, 4112, [ + S - Start Apply Palette Symbols,
+(
+The macro group could not be launched.
+Check name and location of the file.
+)
+Return
+
+~[ & /::
+Run, PixelMousing_MU4.ahk, , UseErrorLevel
+if (ErrorLevel = "Error")
+MsgBox, 4112, Start PixelMousing,
+(
+PixelMousing could not be launched.
+Check name and location of the file.
+)
+Return
+
+~[ & NumpadAdd::				; run SnippingTool
+Run, SnippingTool.exe
+WinActivate, ahk_exe SnippingTool.exe
+WinWaitActive, ahk_exe SnippingTool.exe
+Send, ^n					; new snip
+Sleep, Sleep_1000
+WinActivate, ahk_exe SnippingTool.exe
+WinWaitActive, ahk_exe SnippingTool.exe
+Return
+
+; ♣====================================== HELP INFO  ===========================================
+
+~[ & h::
+MsgBox, 4096, Master MuseScore 4  -  [ + H,
+(
+Launch apply symbols from Palette	[ + S
+Palette Help			P + H
+
+Run PixelMousing			[ + /
+PixelMousing Help		/ + H
+
+Highlight mouse position		CapsLock + LButton
+Run Snipping Tool		[ + NumPadAdd
+
+Reload Master MU4		[ + ]
+Exit Master MU4			] + [
+
+Piano keyboard			P + K
+Scroll up				Z + Up
+Scroll down			Z + Down
+Scroll left			Z + Left
+Scroll right			Z + Right
+)
+Return
+
+; ♣====================================== KEYBOARD SCROLL =========================================
+
+~z & Up::Send {WheelUp}			; Scroll - up - MuseScore Shift + WheelUp
+~z & Down::Send {WheelDown}		; Scroll - down - MuseScore Shift + WheelDown
+~z & Left::Send +{WheelUp}		; Scroll - left - MuseScore WheelUp
+~z & Right::Send +{WheelDown}		; Scroll - right - MuseScore WheelDown
+
+; ♣===================================== FIND MOUSE CURSOR ========================================
+; the next hotkey uses the image MuseScore_logo_round.jpg
+
+~CapsLock & LButton::			; highlight mouse position
+CoordMode, Mouse, Screen
+MouseGetPos, X, Y
+If (X > A_Screenwidth-70)		; to make the flash visible when mouse is at screen borders
+    X := A_Screenwidth-70
+If (Y > A_ScreenHeight-70)
+    Y := A_ScreenHeight-80
+SetWinDelay, -1
+Loop, 2
+{
+    SplashImage, MuseScore_logo_round.jpg, b fm8 wm1000 ctff0000 , ,  -- Here !, EyeCatcher, Arial
+    WinMove, EyeCatcher, , X, Y
+    Sleep, Sleep_300				; shows for 0.3 second
+    SplashImage, Off
+}
+Return
+
+; ♣=================================== ON SCREEN KEYBOARD =========================================
+
+; redefining or clearing the shortcut 'P' makes hotkeys with first key P possible
+; P + K replaces default MuseScore shortcut P
+
+
+~p & k::			; toggles on screen Pianokeyboard
+Send !v
+Sleep, Sleep_200
+Send {Down 9}
+Send {Enter}
+Sleep, Sleep_100
+Send {Esc}			; to get rid of sticky 'View' menu
+Return
+
+
